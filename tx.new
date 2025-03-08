@@ -1,0 +1,55 @@
+#! /bin/sh
+
+# Credits to
+# - tmuxifier: https://github.com/jimeh/tmuxifier
+# - shmux: https://github.com/typecraft-dev/shmux
+# - ThePrimeagen's sessionizer script: https://github.com/ThePrimeagen/.dotfiles/
+
+set -e
+set -u
+set -o pipefail
+set -E
+trap 'echo "Error at line $LINENO"' ERR
+
+. $TX_ROOT/helpers.sh
+
+DATA_DIR="$TX_ROOT/data"
+LAYOUTS_ROOT="$DATA_DIR/layouts"
+FRAGMENTS_ROOT="$DATA_DIR/fragments"
+SESSIONIZER_PATHS="$DATA_DIR/sessionizer"
+
+FZF_TMUX="--tmux center,75%,80%"
+FZF_ARGS="--color=dark,gutter:-1 --cycle"
+
+
+usage() {
+    cat <<EOF
+Usage:
+    help                --  show this help message
+    ls                  --  show running sessions and layouts
+    preview             --  preview session or layout
+    pick                --  pick an open session, or create a session from a layout or sessionizer's path list
+    pick [-f fragment]  --  run a specific layout fragment on the picked session
+    sessionizer         --  edit paths searched by sessionizer
+    new -l [layout]     --  create a new layout or edit existing one
+    new -f [fragment]   --  create a new layout fragment or edit existing one
+    [layout]            --  create new session from the given layout, or a blank session with the given name
+    .                   --  create new session with 1 letter name in the current directory
+    (no arguments)      --  attach to the last active session
+EOF
+}
+
+if [[ $# -gt 0 ]]; then
+    case "$1" in
+        help)
+            usage
+            ;;
+    esac
+else
+    if [ -z "$TMUX" ]; then
+        run_tmux attach
+    else
+        echo "Error: already attached"
+        exit 1
+    fi
+fi
