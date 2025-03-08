@@ -11,12 +11,15 @@ set -o pipefail
 set -E
 trap 'echo "Error at line $LINENO"' ERR
 
+# debug
+# set -x
+
 . $TX_ROOT/helpers.sh
 
 DATA_DIR="$TX_ROOT/data"
-LAYOUTS_ROOT="$DATA_DIR/layouts"
-FRAGMENTS_ROOT="$DATA_DIR/fragments"
-SESSIONIZER_PATHS="$DATA_DIR/sessionizer"
+LAYOUTS_EXT=".layout.sh"
+FRAGMENTS_EXT=".fragment.sh"
+SESSIONIZER_PATHS="$DATA_DIR/sessionizer.txt"
 
 FZF_TMUX="--tmux center,75%,80%"
 FZF_ARGS="--color=dark,gutter:-1 --cycle"
@@ -39,10 +42,37 @@ Usage:
 EOF
 }
 
+ls() {
+    local sessions=$(run_tmux ls -F "#{session_name}")
+    local layouts=$(find "$DATA_DIR" -type f -name "*$LAYOUTS_EXT" -exec basename {} "$LAYOUTS_EXT" \;)
+    local fragments=$(find "$DATA_DIR" -type f -name "*$FRAGMENTS_EXT" -exec basename {} "$FRAGMENTS_EXT" \;)
+
+    if [[ -f "$SESSIONIZER_PATHS" ]]; then
+        local sessionizer_paths=$(cat "$SESSIONIZER_PATHS" | xargs -I{} find {} -maxdepth 1 -type d)
+    else
+        local sessionizer_paths=""
+    fi
+
+    local max_len=$(
+        { echo "$sessions"; echo "$layouts"; echo "$fragments"; echo "$sessionizer_paths"; } | \
+        awk '{print length}' | sort -nr | head -1
+    )
+
+    run_tmux ls | awk -v max_len="$max_len" -F '[:,()]' '{printf "%-*s (session) (%d windows)%s\n", max_len, $1, $2, ($0 ~ /attached/) ? " (attached)" : ""}'
+
+    echo "$layouts" | awk -v max_len="$max_len" '{printf "%-*s (layout)\n", max_len, $1}'
+    echo "$fragments" | awk -v max_len="$max_len" '{printf "%-*s (fragment)\n", max_len, $1}'
+
+    echo "$sessionizer_paths" | awk -v max_len="$max_len" '{printf "%-*s (sessionizer)\n", max_len, $1}'
+}
+
 if [[ $# -gt 0 ]]; then
     case "$1" in
         help)
             usage
+            ;;
+        ls)
+            ls
             ;;
     esac
 else
