@@ -14,23 +14,14 @@ trap 'echo "Error at line $LINENO"' ERR
 # debug
 # set -x
 
-. $TX_ROOT/helpers.sh
-
-DATA_DIR="$TX_ROOT/data"
-LAYOUTS_EXT=".layout.sh"
-FRAGMENTS_EXT=".fragment.sh"
-SESSIONIZER_PATHS="$DATA_DIR/sessionizer.txt"
-
-FZF_TMUX="--tmux center,75%,80%"
-FZF_ARGS="--color=dark,gutter:-1 --cycle"
-
+. $TX_ROOT/helpers.new.sh
 
 usage() {
     cat <<EOF
 Usage:
     help                --  show this help message
     ls                  --  show running sessions and layouts
-    preview             --  preview session or layout
+    preview             --  preview session, layout, fragment or directory
     pick                --  pick an open session, or create a session from a layout or sessionizer's path list
     pick [-f fragment]  --  run a specific layout fragment on the picked session
     sessionizer         --  edit paths searched by sessionizer
@@ -46,16 +37,31 @@ ls() {
     local sessions=$(run_tmux ls -F "#{session_name}")
     local layouts=$(find "$DATA_DIR" -type f -name "*$LAYOUTS_EXT" -exec basename {} "$LAYOUTS_EXT" \;)
     local fragments=$(find "$DATA_DIR" -type f -name "*$FRAGMENTS_EXT" -exec basename {} "$FRAGMENTS_EXT" \;)
+    local sessionizer_paths=$(get_sessionizer_paths)
 
-    if [[ -f "$SESSIONIZER_PATHS" ]]; then
-        local sessionizer_paths=$(cat "$SESSIONIZER_PATHS" | xargs -I{} find {} -maxdepth 1 -type d)
-    else
-        local sessionizer_paths=""
-    fi
+    local base_sessionizer_paths=$(
+        echo "$sessionizer_paths" | while read -r path; do
+            local base=$(basename "$path")
+            echo "$base"
+
+            find "$path" -mindepth 1 -maxdepth 1 -type d | sort |\
+            while read -r nested_path; do
+                if ! grep -qx "$nested_path" <<< "$sessionizer_paths"; then
+                    echo "$(basename "$nested_path") (in $base)"
+                fi
+            done
+        done
+    )
+
+    sessionizer_paths="$base_sessionizer_paths"
 
     local max_len=$(
-        { echo "$sessions"; echo "$layouts"; echo "$fragments"; echo "$sessionizer_paths"; } | \
-        awk '{print length}' | sort -nr | head -1
+        {
+            echo "$sessions";
+            echo "$layouts";
+            echo "$fragments";
+            echo "$sessionizer_paths" | awk "{print \$1}";
+        } | awk '{print length}' | sort -nr | head -1
     )
 
     run_tmux ls | awk -v max_len="$max_len" -F '[:,()]' '{printf "%-*s (session) (%d windows)%s\n", max_len, $1, $2, ($0 ~ /attached/) ? " (attached)" : ""}'
@@ -63,7 +69,14 @@ ls() {
     echo "$layouts" | awk -v max_len="$max_len" '{printf "%-*s (layout)\n", max_len, $1}'
     echo "$fragments" | awk -v max_len="$max_len" '{printf "%-*s (fragment)\n", max_len, $1}'
 
-    echo "$sessionizer_paths" | awk -v max_len="$max_len" '{printf "%-*s (sessionizer)\n", max_len, $1}'
+    echo "$sessionizer_paths" | awk -v max_len="$max_len" '{
+        if ($0 ~ /\(in /) {
+            match($0, /([^ ]+) \(in ([^)]+)\)/, arr)
+            printf "%-*s (sessionizer) (in %s)\n", max_len, arr[1], arr[2]
+        } else {
+            printf "%-*s (sessionizer)\n", max_len, $0
+        }
+    }'
 }
 
 if [[ $# -gt 0 ]]; then
