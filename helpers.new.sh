@@ -5,9 +5,6 @@ LAYOUTS_EXT=".layout.sh"
 FRAGMENTS_EXT=".fragment.sh"
 SESSIONIZER_PATHS="$DATA_DIR/sessionizer.txt"
 
-FZF_TMUX="--tmux center,75%,80%"
-FZF_ARGS="--color=dark,gutter:-1 --cycle"
-
 run_tmux() {
     tmux "$@" 2>/dev/null
 }
@@ -49,20 +46,28 @@ find_dirs() {
 
 find_sessionizer_path() {
     local path="$1"
+    local regex="/$path$"
 
     get_sessionizer_paths |\
-    while read -r sessionizer_path; do
-        if grep -q "$path" <<< "$sessionizer_path"; then
-            echo "$sessionizer_path"
+    while read -r path; do
+        if grep -qE "$regex" <<< "$path"; then
+            echo "$path"
             break
         fi
 
-        find_dirs "$sessionizer_path" |\
-        while read -r nested_path; do
-            if grep -q "$path" <<< "$nested_path"; then
-                echo "$nested_path"
-                break
-            fi
-        done
+        path=$(
+            find_dirs "$path" |\
+            while read -r path; do
+                if grep -qE "$regex" <<< "$path"; then
+                    echo "$path"
+                    break
+                fi
+            done
+        )
+
+        if [ -n "$path" ]; then
+            echo "$path"
+            break
+        fi
     done
 }

@@ -5,204 +5,256 @@
 # - shmux: https://github.com/typecraft-dev/shmux
 # - ThePrimeagen's sessionizer script: https://github.com/ThePrimeagen/.dotfiles/
 
-SESSIONS_ROOT="$TX_ROOT/sessions"
-DIRS="$SESSIONS_ROOT/dirs.txt"
+set -e
+set -u
+set -o pipefail
+set -E
+trap 'echo "Error at line $LINENO"' ERR
 
-FZF_TMUX="--tmux center,75%,80%"
-FZF_ARGS="--color=dark,gutter:-1 --cycle"
+. $TX_ROOT/helpers.new.sh
 
-. $TX_ROOT/helpers.sh
-
-usage() {
+help() {
     cat <<EOF
 Usage:
-    -h | --help               --  show this help message
-    --ls | ls                 --  show running sessions and layouts
-    --ls-sessions | lss       --  list sessions only
-    --ls-layouts  | lsl       --  list layouts only
-    (--layout | -l) [layout]  --  create a new layout or edit existing one
-    --preview                 --  preview session or layout
-    --picker | -s             --  pick session or layout
-    --sessions | -s           --  open sessionizer
-    --add-sessions | -as      --  add a new directory to sessionizer
-    --rm-sessions | -rs       --  remove a directory from sessionizer
-    [layout]                  --  create new session from the given layout, or a blank session with the given name
-    (no arguments)            --  attach to the last active session
+    help                                 --  show this help message
+    ls                                   --  show running sessions and layouts
+    preview [input]                      --  preview session, layout, fragment or directory (matches input in this order)
+    preview (-s | -l | -f | -d) [input]  --  preview can also accept flags if there are name conflicts
+    pick                                 --  pick an open session, or create a session from a layout or sessionizer's path list
+    pick [-f fragment]                   --  run a specific layout fragment on the picked session
+    sessionizer                          --  edit paths searched by sessionizer
+    new -l [layout]                      --  create a new layout or edit existing one
+    new -f [fragment]                    --  create a new layout fragment or edit existing one
+    [layout]                             --  create new session from the given layout, or a blank session with the given name
+    .                                    --  create new session with 1 letter name in the current directory
+    (no arguments)                       --  attach to the last active session
 EOF
 }
 
-list() {
-    sessions=$(get_sessions)
+usage() {
+    help
+    exit 1
+}
 
-    layouts=$(
-        get_layouts | while read -r layout; do
-            echo "$sessions" | grep -qx "$layout"
-            if [ $? -ne 0 ]; then
-                echo "$layout"
-            fi
+list() {
+    local sessions=$(run_tmux ls -F "#{session_name}")
+    local layouts=$(find "$DATA_DIR" -type f -name "*$LAYOUTS_EXT" -exec basename {} "$LAYOUTS_EXT" \;)
+    local fragments=$(find "$DATA_DIR" -type f -name "*$FRAGMENTS_EXT" -exec basename {} "$FRAGMENTS_EXT" \;)
+    local sessionizer_paths=$(get_sessionizer_paths)
+
+    local base_sessionizer_paths=$(
+        echo "$sessionizer_paths" | while read -r path; do
+            local base=$(basename "$path")
+            echo "$base"
+
+            find_dirs "$path" | \
+            while read -r nested_path; do
+                if ! grep -qx "$nested_path" <<< "$sessionizer_paths"; then
+                    echo "$(basename "$nested_path") (in $base)"
+                fi
+            done
         done
     )
 
-    max_len=$( { echo "$sessions"; echo "$layouts"; } | awk '{print length}' | sort -nr | head -1 )
+    sessionizer_paths="$base_sessionizer_paths"
+
+    local max_len=$(
+        {
+            echo "$sessions";
+            echo "$layouts";
+            echo "$fragments";
+            echo "$sessionizer_paths" | awk "{print \$1}";
+        } | awk '{print length}' | sort -nr | head -1
+    )
 
     run_tmux ls | awk -v max_len="$max_len" -F '[:,()]' '{printf "%-*s (session) (%d windows)%s\n", max_len, $1, $2, ($0 ~ /attached/) ? " (attached)" : ""}'
+
     echo "$layouts" | awk -v max_len="$max_len" '{printf "%-*s (layout)\n", max_len, $1}'
+    echo "$fragments" | awk -v max_len="$max_len" '{printf "%-*s (fragment)\n", max_len, $1}'
+
+    echo "$sessionizer_paths" | awk -v max_len="$max_len" '{
+        if ($0 ~ /\(in /) {
+            match($0, /([^ ]+) \(in ([^)]+)\)/, arr)
+            printf "%-*s (directory) (in %s)\n", max_len, arr[1], arr[2]
+        } else {
+            printf "%-*s (directory)\n", max_len, $0
+        }
+    }'
 }
 
-new_session() {
-    if is_session $1; then
-        attach_or_switch $1
-        return
+preview_session() {
+    if [ "${2}" == "1" ]; then
+        if ! is_session "$1"; then
+            echo "Session not found"
+            exit 1
+        fi
     fi
-
-    if is_layout $1; then
-        . "$SESSIONS_ROOT/$1.layout.sh"
-        return
-    fi
-
-    run_tmux new-session -d -s "$1"
-    attach_or_switch $1
+    run_tmux capture-pane -ep -t "$1"
 }
 
-edit_layout() {
-    file="$SESSIONS_ROOT/$1.layout.sh"
+preview_layout() {
+    local file="$1"
 
-    if [[ ! -f $file ]] then
-        default_layout $1 $file
+    if [ "${2}" == "1" ]; then
+        file=$(find_layout "$file")
+        if [ -z "$file" ]; then
+            echo "Preview not available"
+            exit 1
+        fi
     fi
 
-    $EDITOR $file
+    bat "$file" --color=always
+}
+
+preview_fragment() {
+    local file="$1"
+
+    if [ "${2}" == "1" ]; then
+        file=$(find_fragment "$file")
+        if [ -z "$file" ]; then
+            echo "Preview not available"
+            exit 1
+        fi
+    fi
+
+    bat "$file" --color=always
+}
+
+preview_dir() {
+    local dir="$1"
+
+    if [ "${2}" == "1" ]; then
+        dir=$(find_sessionizer_path "$dir")
+        if [ -z "$dir" ]; then
+            echo "Preview not available"
+            exit 1
+        fi
+    fi
+
+    ls -la "$dir" --color=always
 }
 
 preview() {
     if is_session $1; then
-        run_tmux capture-pane -ep -t "$1"
+        preview_session "$1" "0"
         return
     fi
 
-    if is_layout $1; then
-        bat "$SESSIONS_ROOT/$1.layout.sh" --color=always
+    local path
+
+    path=$(find_layout "$1")
+    if [ -n "$path" ]; then
+        preview_layout "$path" "0"
         return
     fi
+
+    path=$(find_fragment "$1")
+    if [ -n "$path" ]; then
+        preview_fragment "$path" "0"
+        return
+    fi
+
+    path=$(find_sessionizer_path "$1")
+    if [ -n "$path" ]; then
+        preview_dir "$path" "0"
+        return
+    fi
+
+    echo "No match found"
+    return 1
 }
 
 picker() {
-    if [ -z "$TMUX" ]; then
-        selected=$(
-            list | \
-            fzf \
-                $FZF_ARGS \
-                --bind "tab:up" \
-                --bind "btab:down" \
-                --preview 'echo {} | awk "{print \$1}" | xargs -I{} bash -c "tx --preview {}"' \
-        )
-    else
-        selected=$(
-            list | \
-            fzf \
-                $FZF_ARGS \
-                $FZF_TMUX \
-                --bind "tab:up" \
-                --bind "btab:down" \
-                --preview 'echo {} | awk "{print \$1}" | xargs -I{} bash -c "tx --preview {}"' \
-                --preview-window 'up,75%,border-bottom' \
-        )
-    fi
+    selected=$(
+        list |\
+        fzf \
+            --color=dark,gutter:-1 \
+            --cycle \
+            --tmux center,75%,80% \
+            --bind "tab:down" \
+            --bind "btab:up" \
+            --reverse \
+            --preview 'echo {} | awk "{match(\$0, /\(([^)]+)\)/, arr); printf \"-%s %s\n\", substr(arr[1], 1, 1), \$1}" | xargs tx preview' \
+            --preview-window 'up,75%,border-bottom'
+    )
 
     if [ $? -eq 0 ]; then
-        new_session $selected
-    fi
-}
-
-sessionizer() {
-    if [ ! -f "$DIRS" ]; then
-        touch "$DIRS"
-        echo "File $DIRS did not exist, so it has been created. Please add directories to it."
-        exit 0
-    fi
-
-    dir=$(cat "$DIRS" | xargs -I{} find {} -maxdepth 1 -type d | fzf $FZF_ARGS $FZF_TMUX)
-    selected=$(basename "$dir")
-
-    if [ -z "$selected" ]; then
-        exit 0
-    fi
-
-    while is_session "$selected"; do
-        selected="$RANDOM"
-    done
-
-    run_tmux new-session -d -s "$selected" -c "$dir"
-    attach_or_switch "$selected"
-}
-
-add_session_dir() {
-    args="-mindepth 0 -maxdepth 1 -type d"
-    selected=$(find / $args | fzf $FZF_ARGS $FZF_TMUX --bind "tab:replace-query+reload(find '{}' $args)")
-    if [ -n "$selected" ]; then
-        tmp=$(mktemp)
-        { echo "$selected"; cat "$DIRS"; } | sort | uniq > "$tmp"
-        mv "$tmp" "$DIRS"
-    fi
-}
-
-rm_session_dir() {
-    selected=$(cat "$DIRS" | fzf $FZF_ARGS $FZF_TMUX --multi --bind "tab:select+up" --bind "btab:deselect+down")
-    if [ -n "$selected" ]; then
-        tmp=$(mktemp)
-        grep -vFx "$selected" "$DIRS" > "$tmp"
-        mv "$tmp" "$DIRS"
+        echo "$selected"
     fi
 }
 
 if [[ $# -gt 0 ]]; then
     case "$1" in
-        --help | -h)
-            usage
+        help)
+            help
             ;;
-        --ls | ls)
+        ls)
             list
             ;;
-        --ls-sessions | lss)
-            list | grep "(session)"
-            ;;
-        --ls-layouts  | lsl)
-            list | grep "(layout)"
-            ;;
-        --layout | -l)
-            if [[ -n "$2" && "$2" != --* ]]; then
-                edit_layout "$2"
+        preview)
+            set +u
+            if [ -n "$2" ]; then
+                flag="$2"
             else
-                echo "Error: --layout requires a value"
+                flag=""
+            fi
+
+            if [ -n "$3" ]; then
+                input="$3"
+            else
+                input=""
+            fi
+            set -u
+
+            if [ -z "$flag" ]; then
+                echo "Error: 'preview' requires a valid input"
                 usage
             fi
+
+            case "$flag" in
+                -s)
+                    if [ -n "$input" ]; then
+                        preview_session "$input" "1"
+                    else
+                        echo "Error: '-s' requires a session input"
+                        usage
+                    fi
+                    ;;
+                -l)
+                    if [ -n "$input" ]; then
+                        preview_layout "$input" "1"
+                    else
+                        echo "Error: '-l' requires a layout input"
+                        usage
+                    fi
+                    ;;
+                -f)
+                    if [ -n "$input" ]; then
+                        preview_fragment "$input" "1"
+                    else
+                        echo "Error: '-f' requires a fragment input"
+                        usage
+                    fi
+                    ;;
+                -d)
+                    if [ -n "$input" ]; then
+                        preview_dir "$input" "1"
+                    else
+                        echo "Error: '-d' requires a directory input"
+                        usage
+                    fi
+                    ;;
+                *)
+                    preview "$flag"
+                    ;;
+            esac
             ;;
-        --preview)
-            if [[ -n "$2" && "$2" != --* ]]; then
-                preview "$2"
-            else
-                echo "Error: --preview requires a value"
-                usage
-            fi
-            ;;
-        --picker | -p)
+        pick)
             picker
-            ;;
-        --sessions | -s)
-            sessionizer
-            ;;
-        --add-sessions | -as)
-            add_session_dir
-            ;;
-        --rm-sessions | -rs)
-            rm_session_dir
-            ;;
-        *)
-            new_session $1
             ;;
     esac
 else
-    if [ -z "$TMUX" ]; then
+    if [ -z ${TMUX+x} ]; then
         run_tmux attach
     else
         echo "Error: already attached"
