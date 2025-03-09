@@ -42,7 +42,27 @@ get_sessionizer_paths() {
     fi
 }
 
-is_sessionizer_path() {
+find_dirs() {
     local path="$1"
-    get_sessionizer_paths | grep -qx "$path"
+    find "$path" -mindepth 1 -maxdepth 1 -type d | sort
+}
+
+find_sessionizer_path() {
+    local path="$1"
+
+    get_sessionizer_paths |\
+    while read -r sessionizer_path; do
+        if grep -q "$path" <<< "$sessionizer_path"; then
+            echo "$sessionizer_path"
+            break
+        fi
+
+        find_dirs "$sessionizer_path" |\
+        while read -r nested_path; do
+            if grep -q "$path" <<< "$nested_path"; then
+                echo "$nested_path"
+                break
+            fi
+        done
+    done
 }

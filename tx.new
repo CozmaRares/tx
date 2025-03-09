@@ -11,9 +11,6 @@ set -o pipefail
 set -E
 trap 'echo "Error at line $LINENO"' ERR
 
-# debug
-# set -x
-
 . $TX_ROOT/helpers.new.sh
 
 usage() {
@@ -21,7 +18,7 @@ usage() {
 Usage:
     help                --  show this help message
     ls                  --  show running sessions and layouts
-    preview             --  preview session, layout, fragment or directory
+    preview             --  preview session, layout, fragment or directory (matches input in this order)
     pick                --  pick an open session, or create a session from a layout or sessionizer's path list
     pick [-f fragment]  --  run a specific layout fragment on the picked session
     sessionizer         --  edit paths searched by sessionizer
@@ -33,7 +30,7 @@ Usage:
 EOF
 }
 
-ls() {
+list() {
     local sessions=$(run_tmux ls -F "#{session_name}")
     local layouts=$(find "$DATA_DIR" -type f -name "*$LAYOUTS_EXT" -exec basename {} "$LAYOUTS_EXT" \;)
     local fragments=$(find "$DATA_DIR" -type f -name "*$FRAGMENTS_EXT" -exec basename {} "$FRAGMENTS_EXT" \;)
@@ -44,7 +41,7 @@ ls() {
             local base=$(basename "$path")
             echo "$base"
 
-            find "$path" -mindepth 1 -maxdepth 1 -type d | sort |\
+            find_dirs "$path" | \
             while read -r nested_path; do
                 if ! grep -qx "$nested_path" <<< "$sessionizer_paths"; then
                     echo "$(basename "$nested_path") (in $base)"
@@ -79,14 +76,48 @@ ls() {
     }'
 }
 
+preview() {
+    if is_session $1; then
+        run_tmux capture-pane -ep -t "$1"
+        return
+    fi
+
+    local path
+
+    path=$(find_layout "$1")
+    if [ -n "$path" ]; then
+        bat "$path" --color=always
+        return
+    fi
+
+    path=$(find_fragment "$1")
+    if [ -n "$path" ]; then
+        bat "$path" --color=always
+        return
+    fi
+
+    path=$(find_sessionizer_path "$1")
+    if [ -n "$path" ]; then
+        ls -la "$path" | bat --color=always
+        return
+    fi
+}
+
 if [[ $# -gt 0 ]]; then
     case "$1" in
         help)
             usage
             ;;
         ls)
-            ls
+            list
             ;;
+        preview)
+            if [[ -n "$2" && "$2" != --* ]]; then
+                preview "$2"
+            else
+                echo "Error: 'preview' requires a value"
+                usage
+            fi
     esac
 else
     if [ -z "$TMUX" ]; then
