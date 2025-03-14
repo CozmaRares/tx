@@ -28,11 +28,19 @@ get_layouts() {
     find "$DATA_DIR" -type f -name "*$LAYOUT_EXT" -exec basename {} "$LAYOUT_EXT" \;
 }
 
+is_layout() {
+    find "$DATA_DIR" -type f -name "$1$LAYOUT_EXT" > /dev/null
+}
+
 get_fragments() {
     find "$DATA_DIR" -type f -name "*$FRAGMENT_EXT" -exec basename {} "$FRAGMENT_EXT" \;
 }
 
-get_dir_paths() {
+is_fragment() {
+    find "$DATA_DIR" -type f -name "$1$FRAGMENT_EXT" > /dev/null
+}
+
+read_dir_paths_file() {
     if [ -d "$DIR_PATHS_FILE" ]; then
         echo "Error: $DIR_PATHS_FILE is a directory"
         exit 1
@@ -42,7 +50,11 @@ get_dir_paths() {
         touch "$DIR_PATHS_FILE"
     fi
 
-    local dir_paths=$(cat "$DIR_PATHS_FILE")
+    cat "$DIR_PATHS_FILE"
+}
+
+get_dir_paths() {
+    local dir_paths=$(read_dir_paths_file)
     local nested_dirs=$(
         echo "$dir_paths" | xargs -I[] find [] -mindepth 1 -maxdepth 1 -type d -exec bash -c '
             base_path=$(dirname "${}")
@@ -57,3 +69,6 @@ get_dir_paths() {
     } | sort | uniq
 }
 
+get_full_dir_path() {
+    read_dir_paths_file | xargs -I[] find [] -maxdepth 1 -type d -name "*$1" | head -1
+}

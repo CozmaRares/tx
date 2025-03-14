@@ -84,6 +84,51 @@ list() {
 
 }
 
+preview() {
+    local filter="$1"
+    local name="$2"
+
+    case "$filter" in
+        -s)
+            if get_tmux_sessions | grep -qx "$name"; then
+                run_tmux capture-pane -ep -t "$name"
+            else
+                echo "Session $name not found"
+                exit 1
+            fi
+            ;;
+        -l)
+            if is_layout "$name"; then
+                bat --paging=never --style=plain "$DATA_DIR/$name$LAYOUT_EXT"
+            else
+                echo "Layout $name not found"
+                exit 1
+            fi
+            ;;
+        -f)
+            if is_fragment "$name"; then
+                bat --paging=never --style=plain "$DATA_DIR/$name$FRAGMENT_EXT"
+            else
+                echo "Fragment $name not found"
+                exit 1
+            fi
+            ;;
+        -d)
+            local path=$(get_full_dir_path "$name")
+            if [ -n "$path" ]; then
+                eza --group-directories-first -la "$path" --color=always
+            else
+                echo "Directory $name not found"
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Error: Unknown filter $filter"
+            exit 1
+            ;;
+    esac
+}
+
 if [[ $# -gt 0 ]]; then
     case "$1" in
         help)
@@ -91,6 +136,9 @@ if [[ $# -gt 0 ]]; then
             ;;
         ls)
             list "$2"
+            ;;
+        preview)
+            preview "$2" "$3"
             ;;
     esac
 else
