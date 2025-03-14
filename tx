@@ -5,6 +5,8 @@
 # - shmux: https://github.com/typecraft-dev/shmux
 # - ThePrimeagen's sessionizer script: https://github.com/ThePrimeagen/.dotfiles/
 
+. $TX_ROOT/helpers.sh
+
 usage() {
     cat <<EOF
 Usage:
@@ -24,7 +26,8 @@ Usage:
          dirs              --  Tell me where the files are, Obi-Wan.
 
     # Session Management
-    pick                   --  Pick your poison.
+    pick                   --  Limited stock. Session or layout?
+    sesh                   --  Which directory we're dropping in bois?
     [input]                --  New session. Who dis?
                            --    From layout:  Instant architecture!
                            --    From fragment:  Lego time!
@@ -32,14 +35,67 @@ Usage:
     .                      --  Session! Where? Here! When? Now!
     (no arguments)         --  Attach to the last session. Ahh shit... here we go again.
 EOF
+
+    if [ -n "$1" ]; then
+        exit 1
+    fi
+}
+
+list() {
+    local sessions=$(get_tmux_sessions)
+    local layouts=$(get_layouts)
+    local fragments=""
+    local dir_paths=""
+
+    if [ "$1" = "-a" ]; then
+        fragments=$(get_fragments)
+        dir_paths=$(get_dir_paths)
+    fi
+
+
+    local max_len=$(
+        {
+            echo "$sessions";
+            echo "$layouts";
+            echo "$fragments";
+            echo "$dir_paths";
+        } | awk '{print length}' | sort -nr | head -1
+    )
+
+    tmux ls -F "#{session_attached}:#{session_last_attached}:#{session_name}:#{session_windows}" |\
+        sort -k1,1n -k2,2nr |\
+        while IFS=':' read -r is_attached last_attached session_name num_windows; do
+            local attached_str=""
+            if [[ "$is_attached" == "1" ]]; then
+                attached_str=" (attached)"
+            fi
+            printf "%-*s (session) (%s windows)%s\n" "$max_len" "$session_name" "$num_windows" "$attached_str"
+        done
+
+    echo "$layouts" | awk -v max_len="$max_len" '{printf "%-*s (layout)\n", max_len, $1}'
+
+    if [ -n "$fragments" ]; then
+        echo "$fragments" | awk -v max_len="$max_len" '{printf "%-*s (fragment)\n", max_len, $1}'
+    fi
+
+    if [ -n "$dir_paths" ]; then
+        echo "$dir_paths" | awk -v max_len="$max_len" '{printf "%-*s (directory)\n", max_len, $1}'
+    fi
+
 }
 
 if [[ $# -gt 0 ]]; then
     case "$1" in
+        help)
+            usage
+            ;;
+        ls)
+            list "$2"
+            ;;
     esac
 else
     if [ -z "$TMUX" ]; then
-        tmux attach 2>/dev/null || { echo "Error: Tmux is not running" ; exit 1; }
+        run_tmux attach || { echo "Error: Tmux is not running" ; exit 1; }
     else
         echo "Error: already attached"
         exit 1
