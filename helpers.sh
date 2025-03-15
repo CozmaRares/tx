@@ -6,13 +6,11 @@ DIR_PATHS_FILE="$DATA_DIR/paths.txt"
 LAYOUT_EXT=".layout.sh"
 FRAGMENT_EXT=".fragment.sh"
 
-FZF_ARGS="--color=dark,gutter:-1 --cycle --tmux center,75%,80%"
-
 run_tmux() {
     tmux "$@" 2>/dev/null
 }
 
-attach_or_switch() {
+tmux_attach_or_switch() {
     if [ -z "$TMUX" ]; then
         run_tmux attach-session -t "$1"
     else
@@ -24,6 +22,10 @@ get_tmux_sessions() {
     run_tmux ls -F "#{session_name}"
 }
 
+is_session() {
+    get_tmux_sessions | grep -qx "$1"
+}
+
 get_layouts() {
     find "$DATA_DIR" -type f -name "*$LAYOUT_EXT" -exec basename {} "$LAYOUT_EXT" \;
 }
@@ -32,12 +34,20 @@ is_layout() {
     find "$DATA_DIR" -type f -name "$1$LAYOUT_EXT" > /dev/null
 }
 
+get_layout_path() {
+    echo "$DATA_DIR/$1$LAYOUT_EXT"
+}
+
 get_fragments() {
     find "$DATA_DIR" -type f -name "*$FRAGMENT_EXT" -exec basename {} "$FRAGMENT_EXT" \;
 }
 
 is_fragment() {
     find "$DATA_DIR" -type f -name "$1$FRAGMENT_EXT" > /dev/null
+}
+
+get_fragment_path() {
+    echo "$DATA_DIR/$1$FRAGMENT_EXT"
 }
 
 read_dir_paths_file() {

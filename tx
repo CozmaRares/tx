@@ -52,7 +52,6 @@ list() {
         dir_paths=$(get_dir_paths)
     fi
 
-
     local max_len=$(
         {
             echo "$sessions";
@@ -63,14 +62,14 @@ list() {
     )
 
     tmux ls -F "#{session_attached}:#{session_last_attached}:#{session_name}:#{session_windows}" |\
-        sort -k1,1n -k2,2nr |\
-        while IFS=':' read -r is_attached last_attached session_name num_windows; do
-            local attached_str=""
-            if [[ "$is_attached" == "1" ]]; then
-                attached_str=" (attached)"
-            fi
-            printf "%-*s (session) (%s windows)%s\n" "$max_len" "$session_name" "$num_windows" "$attached_str"
-        done
+    sort -k1,1n -k2,2nr |\
+    while IFS=':' read -r is_attached last_attached session_name num_windows; do
+        local attached_str=""
+        if [[ "$is_attached" == "1" ]]; then
+            attached_str=" (attached)"
+        fi
+        printf "%-*s (session) (%s windows)%s\n" "$max_len" "$session_name" "$num_windows" "$attached_str"
+    done
 
     echo "$layouts" | awk -v max_len="$max_len" '{printf "%-*s (layout)\n", max_len, $1}'
 
@@ -99,7 +98,7 @@ preview() {
             ;;
         -l)
             if is_layout "$name"; then
-                bat --paging=never --style=plain "$DATA_DIR/$name$LAYOUT_EXT"
+                bat --paging=never --style=plain --language=sh --color=always "$DATA_DIR/$name$LAYOUT_EXT"
             else
                 echo "Layout $name not found"
                 exit 1
@@ -107,7 +106,7 @@ preview() {
             ;;
         -f)
             if is_fragment "$name"; then
-                bat --paging=never --style=plain "$DATA_DIR/$name$FRAGMENT_EXT"
+                bat --paging=never --style=plain --language=sh --color=always "$DATA_DIR/$name$FRAGMENT_EXT"
             else
                 echo "Fragment $name not found"
                 exit 1
@@ -129,6 +128,46 @@ preview() {
     esac
 }
 
+pick() {
+    local awk_cmd='awk "{gsub(\"[()]\", \"\", \$2); flag = substr(\$2, 1, 1); print \"tx preview -\" flag \" \" \$1}"'
+
+    local selected=$(
+        list |\
+        fzf \
+            --color=dark,gutter:-1 \
+            --cycle \
+            --tmux center,75%,80% \
+            --reverse \
+            --bind "tab:down" \
+            --bind "btab:up" \
+            --preview "echo {} | $awk_cmd | xargs -I{} bash -c {}" \
+            --preview-window 'up,75%,border-bottom' \
+    )
+
+    if [ -z "$selected" ]; then
+        echo "Nothing selected"
+        exit 1
+    fi
+
+    local name
+
+    read name type <<< $(
+        echo "$selected" |\
+        awk '{gsub("[()]", "", $2); flag = substr($2, 1, 1); print $1 " " flag}'
+    )
+
+    case "$type" in
+        s)
+            tmux_attach_or_switch "$name"
+            ;;
+        l)
+            . $(get_layout_path "$name")
+            ;;
+        *)
+            ;;
+    esac
+}
+
 if [[ $# -gt 0 ]]; then
     case "$1" in
         help)
@@ -139,6 +178,9 @@ if [[ $# -gt 0 ]]; then
             ;;
         preview)
             preview "$2" "$3"
+            ;;
+        pick)
+            pick
             ;;
     esac
 else
