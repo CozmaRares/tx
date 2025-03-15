@@ -44,7 +44,7 @@ is_fragment() {
 
 read_dir_paths_file() {
     if [ -d "$DIR_PATHS_FILE" ]; then
-        echo "Error: $DIR_PATHS_FILE is a directory"
+        # echo "Error: $DIR_PATHS_FILE is a directory"
         exit 1
     fi
 
@@ -52,13 +52,20 @@ read_dir_paths_file() {
         touch "$DIR_PATHS_FILE"
     fi
 
-    cat "$DIR_PATHS_FILE"
+    local dir_paths=$(cat "$DIR_PATHS_FILE")
+
+    if [ -z "$dir_paths" ]; then
+        # echo "Error: no paths in $DIR_PATHS_FILE\nEdit with 'tx edit dirs'"
+        exit 1
+    fi
+
+    echo "$dir_paths"
 }
 
 get_dir_paths() {
     local dir_paths=$(read_dir_paths_file)
     local nested_dirs=$(
-        echo "$dir_paths" | xargs -I[] find [] -mindepth 1 -maxdepth 1 -type d -exec bash -c '
+        echo "$dir_paths" | xargs -P 8 -I"[]" find "[]" -mindepth 1 -maxdepth 1 -type d -exec bash -c '
             base_path=$(dirname "${}")
             name=$(basename "$base_path")/$(basename "${}")
             echo "$name"
@@ -66,11 +73,39 @@ get_dir_paths() {
     )
 
     {
-        echo "$dir_paths" | xargs -I{} basename {};
+        echo "$dir_paths" | xargs -P 8 -I{} basename {};
         echo "$nested_dirs";
     } | sort | uniq
 }
 
 get_full_dir_path() {
-    read_dir_paths_file | xargs -I[] find [] -maxdepth 1 -type d -name "*$1" | head -1
+    read_dir_paths_file |\
+    xargs -P 8 -I"[]" find "[]" -maxdepth 1 -type d |\
+    grep --color=never -E "/$1$" |\
+    head -1
+}
+
+picker() {
+    local input="$1"
+    local preview_cmd="$2"
+
+    local selected=$(
+        echo "$input" |\
+        fzf \
+            --color=dark,gutter:-1 \
+            --cycle \
+            --tmux center,75%,80% \
+            --reverse \
+            --bind "tab:down" \
+            --bind "btab:up" \
+            --preview "$preview_cmd" \
+            --preview-window 'up,75%,border-bottom' \
+    )
+
+    if [ -z "$selected" ]; then
+        # echo "Error: Nothing selected"
+        exit 1
+    fi
+
+    echo "$selected"
 }

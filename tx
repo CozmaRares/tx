@@ -5,6 +5,9 @@
 # - shmux: https://github.com/typecraft-dev/shmux
 # - ThePrimeagen's sessionizer script: https://github.com/ThePrimeagen/.dotfiles/
 
+# FIX: error handling
+# especially for sub commands
+
 . $TX_ROOT/helpers.sh
 
 usage() {
@@ -32,7 +35,7 @@ Usage:
                            --    From layout: Instant architecture!
                            --    From fragment: Lego time!
                            --    Named session: Good ol' fashion session!
-    .                      --  Session! Where? Here! When? Now!
+    .                      --  Session! Where? Here!
     (no arguments)         --  Attach to the last session. Ahh shit... here we go again.
 EOF
 
@@ -66,7 +69,12 @@ list() {
 
     if [ "$1" = "-a" ]; then
         fragments=$(get_fragments)
+
         dir_paths=$(get_dir_paths)
+        if [ "$?" -ne 0 ]; then
+            echo "$dir_paths"
+            exit 1
+        fi
     fi
 
     local max_len=$(
@@ -82,7 +90,7 @@ list() {
     sort -t: -k1,1n -k2,2nr |\
     while IFS=':' read -r is_attached last_attached session_name num_windows; do
         local attached_str=""
-        if [[ "$is_attached" == "1" ]]; then
+        if [ "$is_attached" = "1" ]; then
             attached_str=" (attached)"
         fi
         printf "%-*s (session) (%s windows)%s\n" "$max_len" "$session_name" "$num_windows" "$attached_str"
@@ -108,7 +116,7 @@ preview() {
             if get_tmux_sessions | grep -qx "$name"; then
                 run_tmux capture-pane -ep -t "$name"
             else
-                echo "Session $name not found"
+                echo "Error: session $name not found"
                 exit 1
             fi
             ;;
@@ -116,7 +124,7 @@ preview() {
             if is_layout "$name"; then
                 bat --paging=never --style=plain --language=sh --color=always "$DATA_DIR/$name$LAYOUT_EXT"
             else
-                echo "Layout $name not found"
+                echo "Error: layout $name not found"
                 exit 1
             fi
             ;;
@@ -124,21 +132,21 @@ preview() {
             if is_fragment "$name"; then
                 bat --paging=never --style=plain --language=sh --color=always "$DATA_DIR/$name$FRAGMENT_EXT"
             else
-                echo "Fragment $name not found"
+                echo "Error: fragment $name not found"
                 exit 1
             fi
             ;;
         -d)
             local path=$(get_full_dir_path "$name")
             if [ -n "$path" ]; then
-                eza --group-directories-first -la "$path" --color=always
+                eza --group-directories-first -lah "$path" --color=always
             else
-                echo "Directory $name not found"
+                echo "Error: directory $name not found"
                 exit 1
             fi
             ;;
         *)
-            echo "Error: Unknown filter $filter"
+            echo "Error: unknown filter $filter"
             exit 1
             ;;
     esac
@@ -146,26 +154,12 @@ preview() {
 
 pick() {
     local awk_cmd='awk "{gsub(\"[()]\", \"\", \$2); flag = substr(\$2, 1, 1); print \"tx preview -\" flag \" \" \$1}"'
-
-    local selected=$(
-        list |\
-        fzf \
-            --color=dark,gutter:-1 \
-            --cycle \
-            --tmux center,75%,80% \
-            --reverse \
-            --bind "tab:down" \
-            --bind "btab:up" \
-            --preview "echo {} | $awk_cmd | xargs -I{} bash -c {}" \
-            --preview-window 'up,75%,border-bottom' \
-    )
+    local preview_cmd="echo {} | $awk_cmd | xargs -I{} bash -c {}"
+    local selected=$(picker "$(list)" "$preview_cmd")
 
     if [ -z "$selected" ]; then
-        echo "Nothing selected"
         exit 1
     fi
-
-    local name
 
     read name type <<< $(
         echo "$selected" |\
@@ -199,13 +193,32 @@ edit() {
             $EDITOR "$DIR_PATHS_FILE"
             ;;
         *)
-            echo "Error: Unknown filter $filter"
+            echo "Error: unknown filter $filter"
             exit 1
             ;;
     esac
 }
 
-if [[ $# -gt 0 ]]; then
+sesh() {
+    local awk_cmd='awk "{print \"tx preview -d \" \$1}"'
+    local preview_cmd="basename {} | $awk_cmd | xargs -I{} bash -c {}"
+    local selected=$(picker "$(get_dir_paths)" "$preview_cmd")
+    local dir=$(get_full_dir_path "$selected")
+    local name=$(basename "$dir")
+
+    if [ -z "$selected" ]; then
+        exit 1
+    fi
+
+    while is_session "$name"; do
+        name="$RANDOM"
+    done
+
+    run_tmux new-session -d -s "$name" -c "$dir"
+    tmux_attach_or_switch "$name"
+}
+
+if [ $# -gt 0 ]; then
     case "$1" in
         help)
             usage
@@ -222,10 +235,13 @@ if [[ $# -gt 0 ]]; then
         edit)
             edit "$2" "$3"
             ;;
+        sesh)
+            sesh
+            ;;
     esac
 else
     if [ -z "$TMUX" ]; then
-        run_tmux attach || { echo "Error: Tmux is not running" ; exit 1; }
+        run_tmux attach || { echo "Error: tmux is not running" ; exit 1; }
     else
         echo "Error: already attached"
         exit 1
