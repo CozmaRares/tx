@@ -34,20 +34,12 @@ is_layout() {
     find "$DATA_DIR" -type f -name "$1$LAYOUT_EXT" > /dev/null
 }
 
-get_layout_path() {
-    echo "$DATA_DIR/$1$LAYOUT_EXT"
-}
-
 get_fragments() {
     find "$DATA_DIR" -type f -name "*$FRAGMENT_EXT" -exec basename {} "$FRAGMENT_EXT" \;
 }
 
 is_fragment() {
     find "$DATA_DIR" -type f -name "$1$FRAGMENT_EXT" > /dev/null
-}
-
-get_fragment_path() {
-    echo "$DATA_DIR/$1$FRAGMENT_EXT"
 }
 
 read_dir_paths_file() {

@@ -22,15 +22,15 @@ Usage:
 
     # Editing
     edit -l [layout]       --  Where and mistakes happen.
-         -f [fragment]     --  Small but mighty!  Handle with care.
+         -f [fragment]     --  Small but mighty! Handle with care.
          dirs              --  Tell me where the files are, Obi-Wan.
 
     # Session Management
     pick                   --  Limited stock. Session or layout?
     sesh                   --  Which directory we're dropping in bois?
     [input]                --  New session. Who dis?
-                           --    From layout:  Instant architecture!
-                           --    From fragment:  Lego time!
+                           --    From layout: Instant architecture!
+                           --    From fragment: Lego time!
                            --    Named session: Good ol' fashion session!
     .                      --  Session! Where? Here! When? Now!
     (no arguments)         --  Attach to the last session. Ahh shit... here we go again.
@@ -177,9 +177,30 @@ pick() {
             tmux_attach_or_switch "$name"
             ;;
         l)
-            . $(get_layout_path "$name")
+            . "$DATA_DIR/$name$LAYOUT_EXT"
             ;;
         *)
+            ;;
+    esac
+}
+
+edit() {
+    local filter="$1"
+    local name="$2"
+
+    case "$filter" in
+        -l)
+            $EDITOR "$DATA_DIR/$name$LAYOUT_EXT"
+            ;;
+        -f)
+            $EDITOR "$DATA_DIR/$name$FRAGMENT_EXT"
+            ;;
+        dirs)
+            $EDITOR "$DIR_PATHS_FILE"
+            ;;
+        *)
+            echo "Error: Unknown filter $filter"
+            exit 1
             ;;
     esac
 }
@@ -197,6 +218,9 @@ if [[ $# -gt 0 ]]; then
             ;;
         pick)
             pick
+            ;;
+        edit)
+            edit "$2" "$3"
             ;;
     esac
 else
