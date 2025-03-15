@@ -42,8 +42,25 @@ EOF
 }
 
 list() {
+    declare -A session_set
+    remove_duplicates() {
+        local input="$1"
+        local output=""
+        while IFS= read -r item; do
+            if [ ! ${session_set["$item"]} ]; then
+                output+="$item"$'\n'
+            fi
+        done <<< "$input"
+        echo -n "$output"
+    }
+
     local sessions=$(get_tmux_sessions)
-    local layouts=$(get_layouts)
+
+    while IFS= read -r session; do
+      session_set["$session"]=1
+    done <<< "$sessions"
+
+    local layouts=$(remove_duplicates "$(get_layouts)")
     local fragments=""
     local dir_paths=""
 
@@ -62,7 +79,7 @@ list() {
     )
 
     tmux ls -F "#{session_attached}:#{session_last_attached}:#{session_name}:#{session_windows}" |\
-    sort -k1,1n -k2,2nr |\
+    sort -t: -k1,1n -k2,2nr |\
     while IFS=':' read -r is_attached last_attached session_name num_windows; do
         local attached_str=""
         if [[ "$is_attached" == "1" ]]; then
@@ -80,7 +97,6 @@ list() {
     if [ -n "$dir_paths" ]; then
         echo "$dir_paths" | awk -v max_len="$max_len" '{printf "%-*s (directory)\n", max_len, $1}'
     fi
-
 }
 
 preview() {
