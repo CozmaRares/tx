@@ -200,8 +200,7 @@ edit() {
 }
 
 sesh() {
-    local awk_cmd='awk "{print \"tx preview -d \" \$1}"'
-    local preview_cmd="basename {} | $awk_cmd | xargs -I{} bash -c {}"
+    local preview_cmd="basename {} | xargs -I{} tx preview -d {}"
     local selected=$(picker "$(get_dir_paths)" "$preview_cmd")
     local dir=$(get_full_dir_path "$selected")
     local name=$(basename "$dir")
