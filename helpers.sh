@@ -6,20 +6,20 @@ DIR_PATHS_FILE="$DATA_DIR/paths.txt"
 LAYOUT_EXT=".layout.sh"
 FRAGMENT_EXT=".fragment.sh"
 
-run_tmux() {
-    tmux "$@" 2>/dev/null
-}
-
 tmux_attach_or_switch() {
     if [ -z "$TMUX" ]; then
-        run_tmux attach-session -t "$1"
+        tmux attach-session -t "$1"
     else
-        run_tmux switch-client -t "$1"
+        tmux switch-client -t "$1"
     fi
 }
 
 get_tmux_sessions() {
-    run_tmux ls -F "#{session_name}"
+    local sessions=$(tmux ls -F "$1" 2>/dev/null)
+
+    if [ -n "$sessions" ]; then
+        echo "$sessions"
+    fi
 }
 
 is_session() {
@@ -103,7 +103,6 @@ picker() {
     )
 
     if [ -z "$selected" ]; then
-        # echo "Error: Nothing selected"
         exit 1
     fi
 
