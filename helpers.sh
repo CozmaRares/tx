@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 
 DATA_DIR="$TX_ROOT/data"
 DIR_PATHS_FILE="$DATA_DIR/paths.txt"
@@ -31,7 +31,7 @@ get_layouts() {
 }
 
 is_layout() {
-    find "$DATA_DIR" -type f -name "$1$LAYOUT_EXT" > /dev/null
+    ls "$DATA_DIR" | grep -qx "$1$LAYOUT_EXT"
 }
 
 get_fragments() {
@@ -39,7 +39,7 @@ get_fragments() {
 }
 
 is_fragment() {
-    find "$DATA_DIR" -type f -name "$1$FRAGMENT_EXT" > /dev/null
+    ls "$DATA_DIR" | grep -qx "$1$FRAGMENT_EXT"
 }
 
 read_dir_paths_file() {
@@ -107,4 +107,36 @@ picker() {
     fi
 
     echo "$selected"
+}
+
+default_layout() {
+    cat > $2 <<EOF
+. $TX_ROOT/functions.sh
+
+# Set up project with a root dir, and name
+project_root ~
+session_name "$1"
+
+# create your session
+new_session
+
+# layout your session
+rename_window "code"
+run_command "nvim"
+
+new_window "servers"
+split_horizontal 50%
+
+# select the window you want first
+select_window "code"
+
+# attach to your session
+attach_to_session
+EOF
+}
+
+default_fragment() {
+    cat > $2 <<EOF
+echo "$1"
+EOF
 }

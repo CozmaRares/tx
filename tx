@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 
 # Credits to
 # - tmuxifier: https://github.com/jimeh/tmuxifier
@@ -30,6 +30,7 @@ Usage:
 
     # Session Management
     pick                   --  Limited stock. Session or layout?
+    switch                 --  I changed my mind. Last session was better.
     sesh                   --  Which directory we're dropping in bois?
     [input]                --  New session. Who dis?
                            --    From layout: Instant architecture!
@@ -185,8 +186,35 @@ pick() {
         }'
     )
 
-    echo "$name"
-    echo "$type"
+    case "$type" in
+        s)
+            tmux_attach_or_switch "$name"
+            ;;
+        l)
+            . "$DATA_DIR/$name$LAYOUT_EXT"
+            ;;
+        *)
+            ;;
+    esac
+}
+
+switch() {
+    local last=$(list | head -1)
+    if [ -z "$last" ]; then
+        exit 1
+    fi
+
+    IFS=":" read name type <<< $(
+        echo "$last" |\
+        awk '{
+            match($0, /\(([^)]+)\)/, arr)
+            type = substr(arr[1], 1, 1)
+            gsub(/\(.*\)/, "", $0)
+            name = $0
+            gsub(/[[:space:]]+$/, "", name)
+            print name ":" type
+        }'
+    )
 
     case "$type" in
         s)
@@ -203,22 +231,33 @@ pick() {
 edit() {
     local filter="$1"
     local name="$2"
+    local file
 
     case "$filter" in
         -l)
-            $EDITOR "$DATA_DIR/$name$LAYOUT_EXT"
+            file="$DATA_DIR/$name$LAYOUT_EXT"
+            if [ ! -f "$file" ]; then
+                default_layout "$name" "$file"
+                chmod 744 "$file"
+            fi
             ;;
         -f)
-            $EDITOR "$DATA_DIR/$name$FRAGMENT_EXT"
+            file="$DATA_DIR/$name$FRAGMENT_EXT"
+            if [ ! -f "$file" ]; then
+                default_fragment "$name" "$file"
+                chmod 744 "$file"
+            fi
             ;;
         dirs)
-            $EDITOR "$DIR_PATHS_FILE"
+            file="$DIR_PATHS_FILE"
             ;;
         *)
             echo "Error: unknown filter $filter"
             exit 1
             ;;
     esac
+
+    $EDITOR "$file"
 }
 
 sesh() {
@@ -271,6 +310,9 @@ if [ $# -gt 0 ]; then
             ;;
         pick)
             pick
+            ;;
+        switch)
+            switch
             ;;
         edit)
             edit "$2" "$3"
