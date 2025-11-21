@@ -1,0 +1,11 @@
+[package]
+name = "tx"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.100"
+libc = "0.2.177"
+serde = { version = "1.0.228", features = ["derive"] }
+thiserror = "2.0.17"
+toml = "0.9.8"
