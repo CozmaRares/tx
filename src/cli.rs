@@ -32,7 +32,7 @@ pub enum Command {
     Help,
     Ls { all: bool },
     Preview { kind: PreviewKind, value: String },
-    Edit(Resource),
+    Edit(EditResource),
     Pick,
     Switch,
     Sesh,
@@ -49,7 +49,7 @@ pub enum PreviewKind {
 }
 
 #[derive(Debug)]
-pub enum Resource {
+pub enum EditResource {
     Layout(String),
     Fragment(String),
     DirectoriesFile,
@@ -111,11 +111,11 @@ pub fn parse_args() -> Result<Command> {
             let flag = args.remove(0);
 
             let resource = if flag == "-d" {
-                Resource::DirectoriesFile
+                EditResource::DirectoriesFile
             } else {
                 let lambda = match flag.as_str() {
-                    "-l" => |s| Resource::Layout(s),
-                    "-f" => |s| Resource::Fragment(s),
+                    "-l" => |s| EditResource::Layout(s),
+                    "-f" => |s| EditResource::Fragment(s),
                     _ => bail!(CliError::UnknownEditFlag(flag.to_string())),
                 };
 

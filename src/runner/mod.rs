@@ -1,4 +1,5 @@
 mod utils;
+pub use utils::execvp;
 
 pub mod bat;
 pub mod eza;

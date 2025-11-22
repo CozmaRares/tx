@@ -20,7 +20,7 @@ fn main() -> Result<()> {
         Command::Help => help::handle_help(),
         Command::Ls { all } => list::handle_list(all),
         Command::Preview { kind, value } => preview::handle_preview(kind, value),
-        Command::Edit(resource) => todo!(),
+        Command::Edit(resource) => edit::handle_edit(resource),
         Command::Pick => todo!(),
         Command::Switch => todo!(),
         Command::Sesh => todo!(),

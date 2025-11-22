@@ -1,20 +1,20 @@
-use std::thread;
+use std::{path::Path, thread};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 
-use super::{
-    bat, eza,
-    utils::{execvp, run_command},
-};
+use super::{bat, eza, utils::run_command};
 
-pub const DEPS: &[&str] = &["find", "cat", "test", "mkdir", "touch"];
+pub const DEPS: &[&str] = &["find", "cat", "cp", "mkdir", "touch"];
 
 pub const TX_DIR: &str = "/home/raru/.tx";
 const DATA_DIR: &str = "/home/raru/.tx/data";
 const DIRS_FILE: &str = "/home/raru/.tx/data/dirs.txt";
 
 const LAYOUT_EXT: &str = ".layout.sh";
+const LAYOUT_TEMPLATE: &str = "layout.template";
+
 const FRAGMENT_EXT: &str = ".fragment.sh";
+const FRAGMENT_TEMPLATE: &str = "fragment.template";
 
 #[derive(Debug, Clone)]
 pub struct TxLayout(pub String);
@@ -39,8 +39,30 @@ impl TxLayout {
         Ok(lines.into_iter().map(TxLayout).collect())
     }
 
+    fn get_file_internal(name: &str) -> String {
+        format!("{}/{}{}", DATA_DIR, name, LAYOUT_EXT)
+    }
+
+    fn get_template_file() -> String {
+        format!("{}/{}", DATA_DIR, LAYOUT_TEMPLATE)
+    }
+
     pub fn preview(&self) -> Result<()> {
-        bat::preview(format!("{}/{}{}", DATA_DIR, self.0, LAYOUT_EXT))
+        bat::preview(TxLayout::get_file_internal(&self.0))
+    }
+
+    pub fn get_file(name: String) -> Result<String> {
+        let file = TxLayout::get_file_internal(&name);
+        let path = Path::new(&file);
+
+        if !path.exists() {
+            let template_file = TxLayout::get_template_file();
+            run_command(&["cp", &template_file, &file])?;
+        } else if !path.is_file() {
+            bail!("{} is not a file", file);
+        }
+
+        Ok(file)
     }
 }
 
@@ -67,8 +89,30 @@ impl TxFragment {
         Ok(lines.into_iter().map(TxFragment).collect())
     }
 
+    fn get_file_internal(name: &str) -> String {
+        format!("{}/{}{}", DATA_DIR, name, FRAGMENT_EXT)
+    }
+
+    fn get_template_file() -> String {
+        format!("{}/{}", DATA_DIR, FRAGMENT_TEMPLATE)
+    }
+
     pub fn preview(&self) -> Result<()> {
-        bat::preview(format!("{}/{}{}", DATA_DIR, self.0, FRAGMENT_EXT))
+        bat::preview(TxFragment::get_file_internal(&self.0))
+    }
+
+    pub fn get_file(name: String) -> Result<String> {
+        let file = TxFragment::get_file_internal(&name);
+        let path = Path::new(&file);
+
+        if !path.exists() {
+            let template_file = TxFragment::get_template_file();
+            run_command(&["cp", &template_file, &file])?;
+        } else if !path.is_file() {
+            bail!("{} is not a file", file);
+        }
+
+        Ok(file)
     }
 }
 
@@ -141,21 +185,28 @@ impl TxDirectory {
     pub fn preview(&self) -> Result<()> {
         eza::preview(&self.name)
     }
+
+    pub fn get_dirs_file() -> String {
+        DIRS_FILE.to_string()
+    }
 }
 
 fn ensure_data_dir() -> Result<()> {
-    let exists = run_command(&["test", "-d", DATA_DIR]).is_ok();
-    if !exists {
+    let path = Path::new(DATA_DIR);
+    if !path.exists() {
         run_command(&["mkdir", "-p", DATA_DIR])?;
+    } else if !path.is_dir() {
+        bail!("{} is not a directory", DATA_DIR);
     }
     Ok(())
 }
 
 fn ensure_dirs_file() -> Result<()> {
-    ensure_data_dir()?;
-    let exists = run_command(&["test", "-f", DIRS_FILE]).is_ok();
-    if !exists {
+    let path = Path::new(DIRS_FILE);
+    if !path.exists() {
         run_command(&["touch", DIRS_FILE])?;
+    } else if !path.is_file() {
+        bail!("{} is not a file", DIRS_FILE);
     }
     Ok(())
 }
