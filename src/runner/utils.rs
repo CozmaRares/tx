@@ -1,6 +1,4 @@
-use std::ffi::CString;
-use std::process::Command;
-use std::str;
+use std::{env, ffi::CString, fs, process::Command, str};
 
 use anyhow::{bail, Context, Result};
 use libc;
@@ -27,7 +25,7 @@ pub fn run_command(args: &[&str]) -> Result<String> {
 
 pub fn execvp(args: &[&str]) -> Result<()> {
     if args.is_empty() {
-        anyhow::bail!("No command provided for exec");
+        bail!("No command provided for exec");
     }
 
     let c_args: Vec<CString> = args
@@ -41,6 +39,32 @@ pub fn execvp(args: &[&str]) -> Result<()> {
     unsafe {
         libc::execvp(c_args[0].as_ptr(), c_ptrs.as_ptr());
         let err = std::io::Error::last_os_error();
-        anyhow::bail!("execvp failed: {}", err);
+        bail!("execvp failed: {}", err);
     }
+}
+
+pub fn ensure_deps<Displayable: std::fmt::Display>(deps: &[Displayable]) -> Result<()> {
+    for dep in deps {
+        let dep = dep.to_string();
+        if !is_executable_in_path(&dep) {
+            bail!("Required program not found in PATH: `{}`", dep);
+        }
+    }
+    Ok(())
+}
+
+fn is_executable_in_path(cmd: &str) -> bool {
+    if let Some(paths) = env::var_os("PATH") {
+        for path in env::split_paths(&paths) {
+            let full_path = path.join(cmd);
+            if full_path.exists()
+                && fs::metadata(&full_path)
+                    .map(|m| m.is_file())
+                    .unwrap_or(false)
+            {
+                return true;
+            }
+        }
+    }
+    false
 }

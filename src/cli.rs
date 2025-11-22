@@ -1,6 +1,7 @@
 use std::env;
+
+use anyhow::{bail, Result};
 use thiserror::Error;
-use anyhow::{Result, bail};
 
 #[derive(Error, Debug)]
 pub enum CliError {
@@ -76,12 +77,10 @@ pub fn parse_args() -> Result<Command> {
         "ls" => {
             if args.is_empty() {
                 Command::Ls { all: false }
-            }
-            else if args.get(0) == Some(&"-a".to_string()) {
+            } else if args.get(0) == Some(&"-a".to_string()) {
                 args.remove(0);
                 Command::Ls { all: true }
-            }
-            else {
+            } else {
                 bail!(CliError::UnknownLsFlag(args.remove(0)))
             }
         }
@@ -119,7 +118,6 @@ pub fn parse_args() -> Result<Command> {
                     "-f" => |s| Resource::Fragment(s),
                     _ => bail!(CliError::UnknownEditFlag(flag.to_string())),
                 };
-
 
                 if args.is_empty() {
                     bail!(CliError::ExpectedValueAfterFlag(flag));
