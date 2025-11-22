@@ -28,6 +28,10 @@ pub fn handle_pick() -> Result<()> {
         exit(1);
     }
 
+    open_selection(&selected)
+}
+
+pub fn open_selection(selected: &str) -> Result<()> {
     let split: Vec<&str> = selected.split(' ').filter(|s| !s.is_empty()).collect();
     let name = split[0];
     let r#type = split[1];

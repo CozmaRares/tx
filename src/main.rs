@@ -3,13 +3,13 @@
 // - shmux: https://github.com/typecraft-dev/shmux
 // - ThePrimeagen's sessionizer script: https://github.com/ThePrimeagen/.dotfiles/
 
-mod commands;
 mod cli;
+mod commands;
 mod runner;
 
 use anyhow::Result;
 
-use crate::{commands::*, cli::Command};
+use crate::{cli::Command, commands::*};
 
 fn main() -> Result<()> {
     runner::ensure_dependencies()?;
@@ -22,7 +22,7 @@ fn main() -> Result<()> {
         Command::Preview { kind, value } => preview::handle_preview(kind, value),
         Command::Edit(resource) => edit::handle_edit(resource),
         Command::Pick => pick::handle_pick(),
-        Command::Switch => todo!(),
+        Command::Switch => switch::handle_switch(),
         Command::Sesh => todo!(),
         Command::NewSession(session_location) => todo!(),
         Command::Attach => todo!(),

@@ -24,7 +24,7 @@ impl TxData {
         }
     }
 
-    fn to_string(&self, spaces: usize) -> String {
+    pub fn to_string(&self, spaces: usize) -> String {
         match self {
             TxData::Session(session) => format!(
                 "{:<spaces$} (session) ({} windows){}",
