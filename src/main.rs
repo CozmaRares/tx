@@ -21,7 +21,7 @@ fn main() -> Result<()> {
         Command::Ls { all } => list::handle_list(all),
         Command::Preview { kind, value } => preview::handle_preview(kind, value),
         Command::Edit(resource) => edit::handle_edit(resource),
-        Command::Pick => todo!(),
+        Command::Pick => pick::handle_pick(),
         Command::Switch => todo!(),
         Command::Sesh => todo!(),
         Command::NewSession(session_location) => todo!(),

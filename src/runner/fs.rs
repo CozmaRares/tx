@@ -2,7 +2,7 @@ use std::{path::Path, thread};
 
 use anyhow::{bail, Result};
 
-use super::{bat, eza, utils::run_command};
+use super::{bat, execvp, eza, utils::run_command};
 
 pub const DEPS: &[&str] = &["find", "cat", "cp", "mkdir", "touch"];
 
@@ -64,6 +64,21 @@ impl TxLayout {
 
         Ok(file)
     }
+
+    pub fn open(name: &str) -> Result<()> {
+        let file = TxLayout::get_file_internal(name);
+        let path = Path::new(&file);
+
+        if !path.exists() {
+            bail!("{} does not exist", file);
+        }
+
+        if !path.is_file() {
+            bail!("{} is not a file", file);
+        }
+
+        execvp(&["sh", &file])
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -113,6 +128,10 @@ impl TxFragment {
         }
 
         Ok(file)
+    }
+
+    pub fn open(name: &str) -> Result<()> {
+        todo!()
     }
 }
 
@@ -188,6 +207,10 @@ impl TxDirectory {
 
     pub fn get_dirs_file() -> String {
         DIRS_FILE.to_string()
+    }
+
+    pub fn open(name: &str) -> Result<()> {
+        todo!()
     }
 }
 

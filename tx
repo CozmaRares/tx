@@ -165,7 +165,6 @@ pick() {
         printf "tx preview -%s \"%s\"", type, name
     }'
     local awk_cmd="awk '$inner_awk'"
-    local while_cmd='while read -r line; do echo \"$line\"; done'
     local preview_cmd="echo {} | $awk_cmd | bash"
 
     local selected=$(picker "$(list)" "$preview_cmd")

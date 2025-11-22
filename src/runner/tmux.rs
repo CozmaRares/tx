@@ -43,11 +43,11 @@ impl TmuxSession {
         })
     }
 
-    pub fn open(self) -> Result<()> {
+    pub fn open(name: &str) -> Result<()> {
         let cmd = if env::var("TMUX").is_err() {
-            vec!["tmux", "attach-session", "-t", &self.name]
+            vec!["tmux", "attach-session", "-t", name]
         } else {
-            vec!["tmux", "switch-client", "-t", &self.name]
+            vec!["tmux", "switch-client", "-t", name]
         };
         execvp(&cmd)
     }

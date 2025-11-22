@@ -7,7 +7,7 @@ use crate::runner::{
     tmux::TmuxSession,
 };
 
-enum TxData {
+pub enum TxData {
     Session(TmuxSession),
     Layout(TxLayout),
     Fragment(TxFragment),
@@ -46,6 +46,15 @@ impl TxData {
                 dir.get_last_2_parts(),
                 spaces = spaces
             ),
+        }
+    }
+
+    pub fn open(self) -> Result<()> {
+        match self {
+            TxData::Session(session) => TmuxSession::open(&session.name),
+            TxData::Layout(layout) => TxLayout::open(&layout.0),
+            TxData::Fragment(fragment) => TxFragment::open(&fragment.0),
+            TxData::Directory(dir) => TxDirectory::open(dir.get_last_2_parts()),
         }
     }
 }
