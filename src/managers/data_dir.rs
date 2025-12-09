@@ -1,5 +1,5 @@
 use crate::managers::{
-    DirsManager, FragmentsManager, LayoutsManager, ResourceManager,
+    DirsManager, LayoutsManager,
     common::{TX_DIR, ensure_dir_exists},
 };
 
@@ -10,9 +10,7 @@ impl DataDirManager {
         ensure_dir_exists(TX_DIR)?;
 
         DirsManager::ensure_dirs_file()?;
-
-        LayoutsManager.ensure_resource_dir_structure()?;
-        FragmentsManager.ensure_resource_dir_structure()?;
+        LayoutsManager::ensure_layouts_structure()?;
 
         Ok(())
     }

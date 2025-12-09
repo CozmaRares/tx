@@ -1,10 +1,8 @@
 mod common;
 mod data_dir;
 mod dirs;
-mod resources;
+mod layouts;
 
 pub use data_dir::DataDirManager;
 pub use dirs::DirsManager;
-pub use resources::{
-    fragments::FragmentsManager, layouts::LayoutsManager, manager_trait::ResourceManager,
-};
+pub use layouts::LayoutsManager;

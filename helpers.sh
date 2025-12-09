@@ -4,7 +4,6 @@ DATA_DIR="$TX_ROOT/data"
 DIR_PATHS_FILE="$DATA_DIR/paths.txt"
 
 LAYOUT_EXT=".layout.sh"
-FRAGMENT_EXT=".fragment.sh"
 
 tmux_attach_or_switch() {
     if [ -z "$TMUX" ]; then
@@ -32,14 +31,6 @@ get_layouts() {
 
 is_layout() {
     ls "$DATA_DIR" | grep -qx "$1$LAYOUT_EXT"
-}
-
-get_fragments() {
-    find "$DATA_DIR" -type f -name "*$FRAGMENT_EXT" -exec basename {} "$FRAGMENT_EXT" \;
-}
-
-is_fragment() {
-    ls "$DATA_DIR" | grep -qx "$1$FRAGMENT_EXT"
 }
 
 read_dir_paths_file() {
@@ -132,11 +123,5 @@ select_window "code"
 
 # attach to your session
 attach_to_session
-EOF
-}
-
-default_fragment() {
-    cat > $2 <<EOF
-echo "$1"
 EOF
 }

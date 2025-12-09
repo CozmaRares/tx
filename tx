@@ -20,12 +20,10 @@ Usage:
        -a                  --  Gimme all you have! Not blazingly fast.
     preview -s [session]   --  To be used before switching sides.
             -l [layout]    --  Whats in there? *taps layout*
-            -f [fragment]  --  What are THOOSE?
             -d [dir]       --  Like window shopping for code.
 
     # Editing
     edit -l [layout]       --  Where and mistakes happen.
-         -f [fragment]     --  Small but mighty! Handle with care.
          dirs              --  Tell me where the files are, Obi-Wan.
 
     # Session Management
@@ -34,7 +32,6 @@ Usage:
     sesh                   --  Which directory we're dropping in bois?
     [input]                --  New session. Who dis?
                            --    From layout: Instant architecture!
-                           --    From fragment: Lego time!
                            --    Named session: Good ol' fashion session!
     .                      --  Session! Where? Here!
     (no arguments)         --  Attach to the last session. Ahh shit... here we go again.
@@ -67,12 +64,9 @@ list() {
     fi
 
     local layouts=$(remove_duplicates "$(get_layouts)")
-    local fragments=""
     local dir_paths=""
 
     if [ "$1" = "-a" ]; then
-        fragments=$(get_fragments)
-
         dir_paths=$(get_dir_paths)
         if [ "$?" -ne 0 ]; then
             echo "$dir_paths"
@@ -84,7 +78,6 @@ list() {
         {
             echo "$sessions";
             echo "$layouts";
-            echo "$fragments";
             echo "$dir_paths";
         } | awk '{print length}' | sort -nr | head -1
     )
@@ -100,10 +93,6 @@ list() {
     done
 
     echo "$layouts" | awk -v max_len="$max_len" '{printf "%-*s (layout)\n", max_len, $0}'
-
-    if [ -n "$fragments" ]; then
-        echo "$fragments" | awk -v max_len="$max_len" '{printf "%-*s (fragment)\n", max_len, $0}'
-    fi
 
     if [ -n "$dir_paths" ]; then
         echo "$dir_paths" | awk -v max_len="$max_len" '{printf "%-*s (directory)\n", max_len, $0}'
@@ -128,14 +117,6 @@ preview() {
                 bat --paging=never --style=plain --language=sh --color=always "$DATA_DIR/$name$LAYOUT_EXT"
             else
                 echo "Error: layout $name not found"
-                exit 1
-            fi
-            ;;
-        -f)
-            if is_fragment "$name"; then
-                bat --paging=never --style=plain --language=sh --color=always "$DATA_DIR/$name$FRAGMENT_EXT"
-            else
-                echo "Error: fragment $name not found"
                 exit 1
             fi
             ;;
@@ -241,13 +222,6 @@ edit() {
                 chmod 744 "$file"
             fi
             ;;
-        -f)
-            file="$DATA_DIR/$name$FRAGMENT_EXT"
-            if [ ! -f "$file" ]; then
-                default_fragment "$name" "$file"
-                chmod 744 "$file"
-            fi
-            ;;
         dirs)
             file="$DIR_PATHS_FILE"
             ;;
@@ -288,11 +262,6 @@ new_session() {
 
     if is_layout "$name"; then
         . "$DATA_DIR/$name$LAYOUT_EXT"
-        return 0
-    fi
-
-    if is_fragment "$name"; then
-        echo "fragment $name"
         return 0
     fi
 }

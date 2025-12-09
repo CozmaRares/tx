@@ -12,7 +12,7 @@ impl DirsManager {
     }
 
     pub fn ensure_dirs_file() -> anyhow::Result<()> {
-        ensure_file_exists(&DirsManager::get_dirs_file(), Some(|| "".to_string()))
+        ensure_file_exists(&DirsManager::get_dirs_file(), || "".to_string())
     }
 
     pub fn get_dir_paths() -> anyhow::Result<Vec<String>> {

@@ -1,4 +1,4 @@
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, bail};
 use libc;
 use std::{
     ffi::CString,
@@ -7,7 +7,7 @@ use std::{
     str,
 };
 
-pub(super) fn run_command(args: &[&str]) -> Result<String> {
+pub(super) fn run_command(args: &[&str]) -> anyhow::Result<String> {
     if args.is_empty() {
         bail!("No command provided");
     }
@@ -27,7 +27,7 @@ pub(super) fn run_command(args: &[&str]) -> Result<String> {
     }
 }
 
-pub fn run_command_with_stdin(args: &[&str], input: &str) -> Result<String> {
+pub fn run_command_with_stdin(args: &[&str], input: &str) -> anyhow::Result<String> {
     if args.is_empty() {
         bail!("No command provided");
     }
@@ -60,7 +60,7 @@ pub fn run_command_with_stdin(args: &[&str], input: &str) -> Result<String> {
     }
 }
 
-pub fn execvp(args: &[&str]) -> Result<()> {
+pub fn execvp(args: &[&str]) -> anyhow::Result<()> {
     if args.is_empty() {
         bail!("No command provided for exec");
     }
@@ -68,7 +68,7 @@ pub fn execvp(args: &[&str]) -> Result<()> {
     let c_args: Vec<CString> = args
         .iter()
         .map(|s| CString::new(*s).context("CString::new failed"))
-        .collect::<Result<_>>()?;
+        .collect::<anyhow::Result<_>>()?;
 
     let mut c_ptrs: Vec<*const i8> = c_args.iter().map(|c| c.as_ptr()).collect();
     c_ptrs.push(std::ptr::null());

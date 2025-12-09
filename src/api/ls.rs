@@ -1,11 +1,10 @@
-use crate::data::{TmuxSession, TxDirectory, TxFragment, TxLayout};
+use crate::data::{TmuxSession, TxDirectory, TxLayout};
 use anyhow::Result;
 use std::cmp::Ordering;
 
 pub enum LsData {
     Session(TmuxSession),
     Layout(TxLayout),
-    Fragment(TxFragment),
     Directory(TxDirectory),
 }
 
@@ -14,7 +13,6 @@ impl LsData {
         match self {
             LsData::Session(TmuxSession { name, .. }) => name.len(),
             LsData::Layout(TxLayout(name)) => name.len(),
-            LsData::Fragment(TxFragment(name)) => name.len(),
             LsData::Directory(dir) => dir.get_last_2_parts().len(),
         }
     }
@@ -33,9 +31,6 @@ impl LsData {
                 spaces = spaces
             ),
             LsData::Layout(layout) => format!("{:<spaces$} (layout)", layout.0, spaces = spaces),
-            LsData::Fragment(fragment) => {
-                format!("{:<spaces$} (fragment)", fragment.0, spaces = spaces)
-            }
             LsData::Directory(dir) => format!(
                 "{:<spaces$} (directory)",
                 dir.get_last_2_parts(),
@@ -53,7 +48,6 @@ pub fn list(all: bool) -> Result<Vec<LsData>> {
     });
 
     let layouts = TxLayout::get_all()?;
-    let fragments = TxFragment::get_all()?;
 
     let dirs = if all {
         TxDirectory::get_all()?
@@ -64,7 +58,6 @@ pub fn list(all: bool) -> Result<Vec<LsData>> {
     let mut data = Vec::new();
     data.extend(sessions.into_iter().map(LsData::Session));
     data.extend(layouts.into_iter().map(LsData::Layout));
-    data.extend(fragments.into_iter().map(LsData::Fragment));
     data.extend(dirs.into_iter().map(LsData::Directory));
 
     Ok(data)

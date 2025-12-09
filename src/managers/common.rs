@@ -14,18 +14,11 @@ pub fn ensure_dir_exists(dir: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn ensure_file_exists(
-    file: &str,
-    contents: Option<impl FnOnce() -> String>,
-) -> anyhow::Result<()> {
+pub fn ensure_file_exists(file: &str, contents: impl FnOnce() -> String) -> anyhow::Result<()> {
     let path = Path::new(file);
 
     if !path.exists() {
-        if let Some(contents) = contents {
-            fs::write(path, contents())?;
-        } else {
-            anyhow::bail!("{} does not exist", file);
-        }
+        fs::write(path, contents())?;
     } else if !path.is_file() {
         anyhow::bail!("{} is not a file", file);
     }

@@ -9,18 +9,18 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
-    #[command(about = "List sessions, layouts, fragments. Enable listing directories with -a")]
+    #[command(about = "List sessions and layouts. Enable listing directories with -a")]
     Ls {
         #[arg(short)]
         all: bool,
     },
 
     #[command(
-        about = "Edit a layout, fragment, or the directories file",
+        about = "Edit a layout or the directories file",
         group(
             ArgGroup::new("target")
                 .required(true)
-                .args(&["layout", "fragment", "dirs"])
+                .args(&["layout", "dirs"])
         )
     )]
     Edit(EditArgs),
@@ -30,9 +30,6 @@ pub enum Command {
 pub struct EditArgs {
     #[arg(short = 'l', value_name = "LAYOUT")]
     pub layout: Option<String>,
-
-    #[arg(short = 'f', value_name = "FRAGMENT")]
-    pub fragment: Option<String>,
 
     #[arg(short = 'd', long = "dirs")]
     pub dirs: bool,
