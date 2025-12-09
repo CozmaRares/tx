@@ -24,6 +24,9 @@ pub enum Command {
         )
     )]
     Edit(EditArgs),
+
+    #[command(about = "Remove a layout")]
+    Rml { name: String },
 }
 
 #[derive(Args, Debug)]

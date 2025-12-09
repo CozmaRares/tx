@@ -5,9 +5,8 @@ mod data;
 mod managers;
 
 use crate::{
-    api::{edit::handle_edit, ls::handle_ls},
+    api::{edit::handle_edit, ls::handle_ls, rml::handle_rml},
     cli::{Cli, Command},
-    data::TxLayout,
     managers::DataDirManager,
 };
 use clap::Parser;
@@ -29,6 +28,7 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Some(Command::Ls { all }) => handle_ls(all),
         Some(Command::Edit(args)) => handle_edit(args),
+        Some(Command::Rml { name }) => handle_rml(name),
         None => {
             todo!("Attach to last session");
         }
