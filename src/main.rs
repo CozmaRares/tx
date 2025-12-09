@@ -25,12 +25,21 @@ fn main() -> anyhow::Result<()> {
 
     println!("{:#?}", cli);
 
-    match cli.command {
-        Some(Command::Ls { all }) => handle_ls(all),
-        Some(Command::Edit(args)) => handle_edit(args),
-        Some(Command::Rml { name }) => handle_rml(name),
-        None => {
-            todo!("Attach to last session");
-        }
+    if let Some(session_name) = cli.session_name {
+        todo!("Create a named session");
+    } else if cli.command.is_none() {
+        todo!("Attach to last session");
+    }
+
+    let command = cli.command.unwrap();
+
+    match command {
+        Command::Ls { all } => handle_ls(all),
+        Command::Edit(args) => handle_edit(args),
+        Command::Rml { name } => handle_rml(name),
+        Command::Pick => todo!("Pick a session"),
+        Command::Switch => todo!("Switch to last session"),
+        Command::Sesh => todo!("Create session from dirs"),
+        Command::Dot => todo!("Create session from cwd"),
     }
 }

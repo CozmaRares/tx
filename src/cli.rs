@@ -5,6 +5,8 @@ use clap::{ArgGroup, Args, Parser, Subcommand};
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Command>,
+
+    pub session_name: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -18,7 +20,7 @@ pub enum Command {
     #[command(
         about = "Edit a layout or the directories file",
         group(
-            ArgGroup::new("target")
+            ArgGroup::new("edit args")
                 .required(true)
                 .args(&["layout", "dirs"])
         )
@@ -27,6 +29,18 @@ pub enum Command {
 
     #[command(about = "Remove a layout")]
     Rml { name: String },
+
+    #[command(about = "Pick a running session or create one from a layout")]
+    Pick,
+
+    #[command(about = "Switch to the last session")]
+    Switch,
+
+    #[command(about = "Create a new session from the list of directories")]
+    Sesh,
+
+    #[command(about = "Create new session here", name = ".")]
+    Dot,
 }
 
 #[derive(Args, Debug)]
