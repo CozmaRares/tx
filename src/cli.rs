@@ -46,8 +46,25 @@ pub enum Command {
 #[derive(Args, Debug)]
 pub struct EditArgs {
     #[arg(short = 'l', value_name = "LAYOUT")]
-    pub layout: Option<String>,
+    pub layout: Option<EditResource>,
 
     #[arg(short = 'd', long = "dirs")]
     pub dirs: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum EditResource {
+    Template,
+    WithName(String),
+}
+
+impl std::str::FromStr for EditResource {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "template" => Ok(EditResource::Template),
+            _ => Ok(EditResource::WithName(s.to_string())),
+        }
+    }
 }

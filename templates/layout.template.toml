@@ -1,2 +1,27 @@
-[layout]
-name = "{{ name }}"
+[project]
+name = "{{name}}"
+root = "/home"
+default_window = "code"
+
+[[window]]
+name = "code"
+default_pane = 1
+
+    [[window.pane]]
+    commands = ["nvim"]
+
+    [[window.pane]]
+    direction = "horizontal"
+    size = 25
+    commands = ["ls -la", "git status"]
+
+[[window]]
+name = "servers"
+
+    [[window.pane]]
+    commands = ["npm run dev"]
+
+    [[window.pane]]
+    direction = "vertical"
+    size = 50
+    commands = ["docker compose up"]

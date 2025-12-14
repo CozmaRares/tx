@@ -25,11 +25,6 @@ select_window() {
 
 new_session() {
     tmux new-session -d -s "$SESSION_NAME" -c "$ROOT" 2>/dev/null
-
-    if [ $? -ne 0 ]; then
-        attach_to_session
-        exit 0
-    fi
 }
 
 new_window() {

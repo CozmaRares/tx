@@ -1,4 +1,4 @@
-use std::fs;
+use std::{collections::HashMap, fs};
 
 use crate::managers::common::{TX_DIR, ensure_dir_exists, ensure_file_exists};
 
@@ -12,10 +12,7 @@ pub struct LayoutsManager;
 impl LayoutsManager {
     pub fn ensure_layouts_structure() -> anyhow::Result<()> {
         ensure_dir_exists(&format!("{}/{}", TX_DIR, LAYOUTS_DIR))?;
-        ensure_file_exists(
-            &format!("{}/{}", TX_DIR, LAYOUT_TEMPLATE_FILE),
-            create_template,
-        )?;
+        ensure_file_exists(&LayoutsManager::get_template_path(), create_template)?;
         Ok(())
     }
 
@@ -23,13 +20,17 @@ impl LayoutsManager {
         format!("{}/{}/{}{}", TX_DIR, LAYOUTS_DIR, name, FILE_EXT)
     }
 
-    pub fn create_resource_if_not_exists(name: &str) -> anyhow::Result<String> {
+    pub fn get_template_path() -> String {
+        format!("{}/{}", TX_DIR, LAYOUT_TEMPLATE_FILE)
+    }
+
+    pub fn create_if_not_exists(name: &str) -> anyhow::Result<String> {
         let file_path = LayoutsManager::create_file_path(name);
         ensure_file_exists(&file_path, || create_from_template(name))?;
         Ok(file_path)
     }
 
-    pub fn read_resource(name: &str) -> anyhow::Result<String> {
+    pub fn read(name: &str) -> anyhow::Result<String> {
         let file_path = LayoutsManager::create_file_path(name);
         let contents = fs::read_to_string(file_path)?;
         Ok(contents)
@@ -66,15 +67,25 @@ struct TemplateParams {
     name: String,
 }
 
+impl Into<HashMap<String, String>> for TemplateParams {
+    fn into(self) -> HashMap<String, String> {
+        let mut map = HashMap::new();
+        map.insert("{{name}}".to_string(), self.name);
+        map
+    }
+}
+
 fn create_from_template(name: &str) -> String {
-    let template = read_template();
+    let mut template = read_template();
     let params = TemplateParams {
         name: name.to_string(),
     };
 
-    let mut tera = tera::Tera::default();
-    let mut context = tera::Context::new();
-    context.insert("name", &params.name);
+    let map: HashMap<String, String> = params.into();
 
-    tera.render_str(&template, &context).unwrap()
+    for (key, value) in map.iter() {
+        template = template.replace(key, value);
+    }
+
+    template
 }

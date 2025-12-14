@@ -5,7 +5,7 @@ mod data;
 mod managers;
 
 use crate::{
-    api::{edit::handle_edit, ls::handle_ls, rml::handle_rml},
+    api::{edit::handle_edit, ls::handle_ls, rml::handle_rml, session::handle_new_session},
     cli::{Cli, Command},
     managers::DataDirManager,
 };
@@ -26,7 +26,7 @@ fn main() -> anyhow::Result<()> {
     println!("{:#?}", cli);
 
     if let Some(session_name) = cli.session_name {
-        todo!("Create a named session");
+        return handle_new_session(session_name);
     } else if cli.command.is_none() {
         todo!("Attach to last session");
     }
