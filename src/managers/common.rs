@@ -1,6 +1,8 @@
 use std::{fs, path::Path};
 
-pub const TX_DIR: &str = "/tmp/.tx";
+lazy_static::lazy_static! {
+    pub static ref TX_ROOT: String = std::env::var("TX_ROOT").expect("Env var TX_ROOT not set");
+}
 
 pub fn ensure_dir_exists(dir: &str) -> anyhow::Result<()> {
     let path = Path::new(dir);

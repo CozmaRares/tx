@@ -9,7 +9,7 @@ pub struct TmuxSession {
 }
 
 impl TmuxSession {
-    pub fn get_all() -> anyhow::Result<Vec<TmuxSession>> {
+    pub fn get_all() -> Vec<TmuxSession> {
         tmux::get_sessions()
     }
 

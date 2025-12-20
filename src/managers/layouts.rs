@@ -1,27 +1,37 @@
 use std::{collections::HashMap, fs};
 
-use crate::managers::common::{TX_DIR, ensure_dir_exists, ensure_file_exists};
+use crate::managers::common::{TX_ROOT, ensure_dir_exists, ensure_file_exists};
 
 const LAYOUTS_DIR: &str = "layouts";
 const LAYOUT_TEMPLATE_FILE: &str = "layout.template.toml";
 const FILE_EXT: &str = ".toml";
-const DEFAULT_TEMPLATE_LOCATION: &str = "templates";
+const TEMPLATE_LOCATION: &str = "templates";
 
 pub struct LayoutsManager;
 
 impl LayoutsManager {
     pub fn ensure_layouts_structure() -> anyhow::Result<()> {
-        ensure_dir_exists(&format!("{}/{}", TX_DIR, LAYOUTS_DIR))?;
-        ensure_file_exists(&LayoutsManager::get_template_path(), create_template)?;
+        ensure_dir_exists(&format!("{}/{}", TX_ROOT.as_str(), LAYOUTS_DIR))?;
+        ensure_file_exists(&LayoutsManager::get_template_path(), || {
+            panic!(
+                "Template file not found at path {}",
+                LayoutsManager::get_template_path()
+            )
+        })?;
         Ok(())
     }
 
     pub fn create_file_path(name: &str) -> String {
-        format!("{}/{}/{}{}", TX_DIR, LAYOUTS_DIR, name, FILE_EXT)
+        format!("{}/{}/{}{}", TX_ROOT.as_str(), LAYOUTS_DIR, name, FILE_EXT)
     }
 
     pub fn get_template_path() -> String {
-        format!("{}/{}", TX_DIR, LAYOUT_TEMPLATE_FILE)
+        format!(
+            "{}/{}/{}",
+            TX_ROOT.as_str(),
+            TEMPLATE_LOCATION,
+            LAYOUT_TEMPLATE_FILE
+        )
     }
 
     pub fn create_if_not_exists(name: &str) -> anyhow::Result<String> {
@@ -37,7 +47,7 @@ impl LayoutsManager {
     }
 
     pub fn get_all() -> anyhow::Result<Vec<String>> {
-        let dir_path = format!("{}/{}", TX_DIR, LAYOUTS_DIR);
+        let dir_path = format!("{}/{}", TX_ROOT.as_str(), LAYOUTS_DIR);
         let read_dir = fs::read_dir(dir_path)?;
 
         let files: Vec<_> = read_dir
@@ -51,15 +61,6 @@ impl LayoutsManager {
 
         Ok(files)
     }
-}
-
-fn read_template() -> String {
-    fs::read_to_string(format!("{}/{}", TX_DIR, LAYOUT_TEMPLATE_FILE)).unwrap()
-}
-
-fn create_template() -> String {
-    let template_path = format!("{}/{}", DEFAULT_TEMPLATE_LOCATION, LAYOUT_TEMPLATE_FILE);
-    fs::read_to_string(template_path).unwrap()
 }
 
 #[derive(Debug)]
@@ -76,7 +77,7 @@ impl Into<HashMap<String, String>> for TemplateParams {
 }
 
 fn create_from_template(name: &str) -> String {
-    let mut template = read_template();
+    let mut template = fs::read_to_string(LayoutsManager::get_template_path()).unwrap();
     let params = TemplateParams {
         name: name.to_string(),
     };

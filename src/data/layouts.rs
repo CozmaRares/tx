@@ -31,21 +31,21 @@ impl TxLayout {
 #[derive(Debug, Deserialize)]
 struct TxLayoutConfig {
     project: ProjectConfig,
-    #[serde(rename = "window")]
+    #[serde(rename = "window", default)]
     windows: Vec<Window>,
 }
 
 #[derive(Debug, Deserialize)]
 struct ProjectConfig {
     name: String,
-    root: String,
+    root: Option<String>,
     default_window: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct Window {
     name: String,
-    #[serde(rename = "pane")]
+    #[serde(rename = "pane", default)]
     panes: Vec<Pane>,
     default_pane: Option<usize>,
 }
@@ -59,7 +59,7 @@ struct Pane {
 
 impl TxLayoutConfig {
     pub fn open(self) -> anyhow::Result<()> {
-        let mut builder = TmuxSessionBuilder::new(&self.project.name, &self.project.root);
+        let mut builder = TmuxSessionBuilder::new(&self.project.name, self.project.root);
 
         builder.create_session()?;
 

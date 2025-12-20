@@ -4,7 +4,7 @@ use std::env;
 
 pub(super) const PROGRAM: &str = "tmux";
 
-pub fn get_sessions() -> anyhow::Result<Vec<TmuxSession>> {
+pub fn get_sessions() -> Vec<TmuxSession> {
     run_command(&[
         "tmux",
         "ls",
@@ -39,6 +39,7 @@ pub fn get_sessions() -> anyhow::Result<Vec<TmuxSession>> {
             })
             .collect()
     })
+    .unwrap_or_default()
 }
 
 pub fn open_session(name: &str) -> anyhow::Result<()> {
@@ -74,10 +75,17 @@ macro_rules! format_pane {
 }
 
 impl TmuxSessionBuilder {
-    pub fn new(name: &str, root: &str) -> Self {
+    pub fn new(name: &str, root: Option<String>) -> Self {
         Self {
             session_name: name.to_string(),
-            session_root: root.to_string(),
+            session_root: root.unwrap_or(
+                std::env::current_dir()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+
             current_window: String::new(),
             current_pane: 1,
         }

@@ -23,6 +23,7 @@ fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
+    #[cfg(debug_assertions)]
     println!("{:#?}", cli);
 
     if let Some(session_name) = cli.session_name {

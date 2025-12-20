@@ -41,7 +41,7 @@ impl LsData {
 }
 
 pub fn list(all: bool) -> Result<Vec<LsData>> {
-    let mut sessions = TmuxSession::get_all()?;
+    let mut sessions = TmuxSession::get_all();
     sessions.sort_by(|a, b| match a.is_attached.cmp(&b.is_attached) {
         Ordering::Equal => b.last_attached.cmp(&a.last_attached),
         other => other,
