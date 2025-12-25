@@ -5,7 +5,7 @@ mod data;
 mod managers;
 
 use crate::{
-    api::{edit::handle_edit, ls::handle_ls, rml::handle_rml, session::handle_new_session, attach::handle_attach},
+    api::{handle_attach, handle_edit, handle_ls, handle_new_session, handle_rml, handle_switch},
     cli::{Cli, Command},
     managers::DataDirManager,
 };
@@ -23,9 +23,6 @@ fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    #[cfg(debug_assertions)]
-    println!("{:#?}", cli);
-
     if let Some(session_name) = cli.session_name {
         return handle_new_session(session_name);
     } else if cli.command.is_none() {
@@ -39,7 +36,7 @@ fn main() -> anyhow::Result<()> {
         Command::Edit(args) => handle_edit(args),
         Command::Rml { name } => handle_rml(name),
         Command::Pick => todo!("Pick a session"),
-        Command::Switch => todo!("Switch to last session"),
+        Command::Switch => handle_switch(),
         Command::Sesh => todo!("Create session from dirs"),
         Command::Dot => todo!("Create session from cwd"),
     }

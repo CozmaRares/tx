@@ -40,25 +40,31 @@ impl LsData {
     }
 }
 
-pub fn list(all: bool) -> Result<Vec<LsData>> {
+#[derive(Debug, PartialEq, PartialOrd)]
+pub enum ListFilter {
+    JustSessions,
+    Regular,
+    All,
+}
+
+pub fn list(filter: ListFilter) -> Result<Vec<LsData>> {
     let mut sessions = TmuxSession::get_all();
     sessions.sort_by(|a, b| match a.is_attached.cmp(&b.is_attached) {
         Ordering::Equal => b.last_attached.cmp(&a.last_attached),
         other => other,
     });
 
-    let layouts = TxLayout::get_all()?;
+    let mut data: Vec<_> = sessions.into_iter().map(LsData::Session).collect();
 
-    let dirs = if all {
-        TxDirectory::get_all()?
-    } else {
-        Vec::new()
-    };
+    if filter >= ListFilter::Regular {
+        let layouts = TxLayout::get_all()?;
+        data.extend(layouts.into_iter().map(LsData::Layout));
+    }
 
-    let mut data = Vec::new();
-    data.extend(sessions.into_iter().map(LsData::Session));
-    data.extend(layouts.into_iter().map(LsData::Layout));
-    data.extend(dirs.into_iter().map(LsData::Directory));
+    if filter >= ListFilter::All {
+        let dirs = TxDirectory::get_all()?;
+        data.extend(dirs.into_iter().map(LsData::Directory));
+    }
 
     Ok(data)
 }
@@ -72,7 +78,11 @@ pub fn data_to_string(data: &[LsData]) -> String {
 }
 
 pub fn handle_ls(all: bool) -> Result<()> {
-    let data = list(all)?;
+    let data = list(if all {
+        ListFilter::All
+    } else {
+        ListFilter::Regular
+    })?;
     println!("{}", data_to_string(&data));
     Ok(())
 }

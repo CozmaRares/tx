@@ -52,7 +52,7 @@ pub fn open_session(name: &str) -> anyhow::Result<()> {
 }
 
 pub fn attach_to_last_session() -> anyhow::Result<()> {
-    execvp(&["tmux", "attach"])
+    execvp(&["tmux", "attach-session"])
 }
 
 pub fn preview_pane(name: &str) -> anyhow::Result<()> {
