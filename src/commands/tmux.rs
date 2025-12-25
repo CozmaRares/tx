@@ -62,6 +62,10 @@ pub fn preview_pane(name: &str) -> anyhow::Result<()> {
     execvp(&["tmux", "capture-pane", "-ep", "-t", name])
 }
 
+pub fn new_session() -> anyhow::Result<()> {
+    execvp(&["tmux", "new-session"])
+}
+
 pub struct TmuxSessionBuilder {
     session_name: String,
     session_root: String,

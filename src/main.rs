@@ -8,8 +8,8 @@ use clap::Parser;
 
 use crate::{
     api::{
-        handle_attach, handle_edit, handle_ls, handle_new_session, handle_pick, handle_preview,
-        handle_rml, handle_switch,
+        handle_attach, handle_dot, handle_edit, handle_ls, handle_new_session, handle_pick,
+        handle_preview, handle_rml, handle_switch,
     },
     cli::{Cli, Command},
     managers::DataDirManager,
@@ -43,6 +43,6 @@ fn main() -> anyhow::Result<()> {
         Command::Pick => handle_pick(),
         Command::Switch => handle_switch(),
         Command::Sesh => todo!("Create session from dirs"),
-        Command::Dot => todo!("Create session from cwd"),
+        Command::Dot => handle_dot(),
     }
 }
