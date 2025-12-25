@@ -27,7 +27,7 @@ pub(super) fn run_command(args: &[&str]) -> anyhow::Result<String> {
     }
 }
 
-pub fn run_command_with_stdin(args: &[&str], input: &str) -> anyhow::Result<String> {
+pub(super) fn run_command_with_stdin(args: &[&str], input: &str) -> anyhow::Result<String> {
     if args.is_empty() {
         bail!("No command provided");
     }

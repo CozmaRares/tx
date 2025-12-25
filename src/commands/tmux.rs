@@ -51,6 +51,10 @@ pub fn open_session(name: &str) -> anyhow::Result<()> {
     execvp(&cmd)
 }
 
+pub fn attach_to_last_session() -> anyhow::Result<()> {
+    execvp(&["tmux", "attach"])
+}
+
 pub fn preview_pane(name: &str) -> anyhow::Result<()> {
     execvp(&["tmux", "capture-pane", "-ep", "-t", name])
 }
