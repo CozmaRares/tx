@@ -1,11 +1,11 @@
-use anyhow::{Context, bail};
-use libc;
 use std::{
     ffi::CString,
     io::Write,
     process::{Command, Stdio},
     str,
 };
+
+use anyhow::{Context, bail};
 
 pub(super) fn run_command(args: &[&str]) -> anyhow::Result<String> {
     if args.is_empty() {

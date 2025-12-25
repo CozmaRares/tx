@@ -4,12 +4,16 @@ mod commands;
 mod data;
 mod managers;
 
+use clap::Parser;
+
 use crate::{
-    api::{handle_attach, handle_edit, handle_ls, handle_new_session, handle_rml, handle_switch},
+    api::{
+        handle_attach, handle_edit, handle_ls, handle_new_session, handle_pick, handle_preview,
+        handle_rml, handle_switch,
+    },
     cli::{Cli, Command},
     managers::DataDirManager,
 };
-use clap::Parser;
 
 fn setup() -> anyhow::Result<()> {
     commands::ensure_deps()?;
@@ -35,7 +39,8 @@ fn main() -> anyhow::Result<()> {
         Command::Ls { all } => handle_ls(all),
         Command::Edit(args) => handle_edit(args),
         Command::Rml { name } => handle_rml(name),
-        Command::Pick => todo!("Pick a session"),
+        Command::Preview(args) => handle_preview(args),
+        Command::Pick => handle_pick(),
         Command::Switch => handle_switch(),
         Command::Sesh => todo!("Create session from dirs"),
         Command::Dot => todo!("Create session from cwd"),

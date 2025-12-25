@@ -1,9 +1,8 @@
-use super::runner::run_command_with_stdin;
-use anyhow::Result;
+use crate::commands::runner::run_command_with_stdin;
 
 pub(super) const PROGRAM: &str = "fzf";
 
-pub fn pick_session(input: &str) -> Result<String> {
+pub fn pick_session(input: &str) -> anyhow::Result<String> {
     let preview_cmd = r#"echo {} | awk '{
         match($0, /\(([^)]+)\)/, arr);
         type = substr(arr[1], 1, 1);
@@ -16,12 +15,12 @@ pub fn pick_session(input: &str) -> Result<String> {
     picker(input, preview_cmd)
 }
 
-pub fn pick_dir(input: &str) -> Result<String> {
+pub fn pick_dir(input: &str) -> anyhow::Result<String> {
     let preview_cmd = r#"basename {} | xargs -I{} tx preview -d {}"#;
     picker(input, preview_cmd)
 }
 
-fn picker(input: &str, preview_cmd: &str) -> Result<String> {
+fn picker(input: &str, preview_cmd: &str) -> anyhow::Result<String> {
     let cmd = vec![
         "fzf",
         "--color=dark,gutter:-1",

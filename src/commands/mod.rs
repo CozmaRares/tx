@@ -1,11 +1,10 @@
-use std::{env, fs};
-
-pub mod runner;
-
 pub mod bat;
 pub mod eza;
 pub mod fzf;
+pub mod runner;
 pub mod tmux;
+
+use std::{env, fs};
 
 pub fn ensure_deps() -> anyhow::Result<()> {
     let deps = [bat::PROGRAM, eza::PROGRAM, fzf::PROGRAM, tmux::PROGRAM];

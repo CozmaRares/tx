@@ -1,10 +1,7 @@
 use serde::Deserialize;
 
 use crate::{
-    commands::{
-        bat,
-        tmux::{self, TmuxSessionBuilder},
-    },
+    commands::{bat, tmux::TmuxSessionBuilder},
     managers::LayoutsManager,
 };
 
@@ -12,6 +9,10 @@ use crate::{
 pub struct TxLayout(pub String);
 
 impl TxLayout {
+    pub fn new(name: String) -> Self {
+        Self(name)
+    }
+
     pub fn get_all() -> anyhow::Result<Vec<TxLayout>> {
         let files = LayoutsManager::get_all()?;
         Ok(files.into_iter().map(TxLayout).collect())

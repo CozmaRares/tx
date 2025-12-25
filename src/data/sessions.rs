@@ -17,7 +17,7 @@ impl TmuxSession {
         tmux::open_session(name)
     }
 
-    pub fn preview(&self) -> anyhow::Result<()> {
-        tmux::preview_pane(&self.name)
+    pub fn preview(name: &str) -> anyhow::Result<()> {
+        tmux::preview_pane(name)
     }
 }

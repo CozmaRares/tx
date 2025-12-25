@@ -1,4 +1,4 @@
-use std::{fs, path::Path, thread};
+use std::{fs, thread};
 
 use crate::{commands::eza, managers::DirsManager};
 
@@ -9,6 +9,22 @@ pub struct TxDirectory {
 }
 
 impl TxDirectory {
+    pub fn new(dir: String) -> Self {
+        let second_to_last_slash_idx = dir.rmatch_indices('/').nth(1).map(|(idx, _)| idx);
+
+        if let Some(second_to_last_slash_idx) = second_to_last_slash_idx {
+            TxDirectory {
+                path: dir,
+                last_2_parts_start: second_to_last_slash_idx + 1,
+            }
+        } else {
+            TxDirectory {
+                path: dir,
+                last_2_parts_start: 0,
+            }
+        }
+    }
+
     pub fn get_all() -> anyhow::Result<Vec<TxDirectory>> {
         let top_level_dirs = DirsManager::get_dir_paths()?;
         let handles: Vec<_> = top_level_dirs
@@ -34,24 +50,7 @@ impl TxDirectory {
         all_dirs.sort();
         all_dirs.dedup();
 
-        Ok(all_dirs
-            .into_iter()
-            .map(|dir| {
-                let second_to_last_slash_idx = dir.rmatch_indices('/').nth(1).map(|(idx, _)| idx);
-
-                if let Some(second_to_last_slash_idx) = second_to_last_slash_idx {
-                    TxDirectory {
-                        path: dir,
-                        last_2_parts_start: second_to_last_slash_idx + 1,
-                    }
-                } else {
-                    TxDirectory {
-                        path: dir,
-                        last_2_parts_start: 0,
-                    }
-                }
-            })
-            .collect())
+        Ok(all_dirs.into_iter().map(TxDirectory::new).collect())
     }
 
     pub fn get_last_2_parts(&self) -> &str {

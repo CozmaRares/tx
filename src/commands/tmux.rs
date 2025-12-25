@@ -1,6 +1,9 @@
-use super::runner::{execvp, run_command};
-use crate::data::TmuxSession;
 use std::env;
+
+use crate::{
+    commands::runner::{execvp, run_command},
+    data::TmuxSession,
+};
 
 pub(super) const PROGRAM: &str = "tmux";
 

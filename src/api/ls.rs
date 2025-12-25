@@ -1,6 +1,6 @@
-use crate::data::{TmuxSession, TxDirectory, TxLayout};
-use anyhow::Result;
 use std::cmp::Ordering;
+
+use crate::data::{TmuxSession, TxDirectory, TxLayout};
 
 pub enum LsData {
     Session(TmuxSession),
@@ -47,7 +47,7 @@ pub enum ListFilter {
     All,
 }
 
-pub fn list(filter: ListFilter) -> Result<Vec<LsData>> {
+pub fn list(filter: ListFilter) -> anyhow::Result<Vec<LsData>> {
     let mut sessions = TmuxSession::get_all();
     sessions.sort_by(|a, b| match a.is_attached.cmp(&b.is_attached) {
         Ordering::Equal => b.last_attached.cmp(&a.last_attached),
@@ -69,7 +69,7 @@ pub fn list(filter: ListFilter) -> Result<Vec<LsData>> {
     Ok(data)
 }
 
-pub fn data_to_string(data: &[LsData]) -> String {
+pub fn data_to_string(data: Vec<LsData>) -> String {
     let max_len = data.iter().map(|d| d.len()).max().unwrap_or(0);
     data.iter()
         .map(|d| d.to_string(max_len))
@@ -77,12 +77,12 @@ pub fn data_to_string(data: &[LsData]) -> String {
         .join("\n")
 }
 
-pub fn handle_ls(all: bool) -> Result<()> {
+pub fn handle_ls(all: bool) -> anyhow::Result<()> {
     let data = list(if all {
         ListFilter::All
     } else {
         ListFilter::Regular
     })?;
-    println!("{}", data_to_string(&data));
+    println!("{}", data_to_string(data));
     Ok(())
 }

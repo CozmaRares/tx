@@ -30,6 +30,16 @@ pub enum Command {
     #[command(about = "Remove a layout")]
     Rml { name: String },
 
+    #[command(
+        about = "Preview a session, layout or directory",
+        group(
+            ArgGroup::new("preview args")
+                .required(true)
+                .args(&["session", "layout", "directory"])
+        )
+    )]
+    Preview(PreviewArgs),
+
     #[command(about = "Pick a running session or create one from a layout")]
     Pick,
 
@@ -67,4 +77,16 @@ impl std::str::FromStr for EditResource {
             _ => Ok(EditResource::WithName(s.to_string())),
         }
     }
+}
+
+#[derive(Args, Debug)]
+pub struct PreviewArgs {
+    #[arg(short = 's', value_name = "SESSION")]
+    pub session: Option<String>,
+
+    #[arg(short = 'l', value_name = "LAYOUT")]
+    pub layout: Option<String>,
+
+    #[arg(short = 'd', value_name = "DIRECTORY")]
+    pub directory: Option<String>,
 }

@@ -1,9 +1,8 @@
 use crate::commands::runner::execvp;
-use anyhow::Result;
 
 pub(super) const PROGRAM: &str = "bat";
 
-pub fn preview_file(path: String) -> Result<()> {
+pub fn preview_file(path: String) -> anyhow::Result<()> {
     let cmd = vec![
         "bat",
         "--paging=never",

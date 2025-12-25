@@ -8,7 +8,7 @@
 # FIX: error handling
 # especially for sub commands
 
-. $TX_ROOT/helpers.sh
+. $TX_ROOT/../helpers.sh
 
 usage() {
     cat <<EOF
