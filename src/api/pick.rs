@@ -3,7 +3,7 @@ use std::process::exit;
 use crate::{
     api::ls::{self, ListFilter, data_to_string},
     commands::fzf,
-    data::{TmuxSession, TxDirectory, TxLayout},
+    data::{TmuxSession, TxLayout},
 };
 
 pub fn handle_pick() -> anyhow::Result<()> {
@@ -22,7 +22,6 @@ pub fn handle_pick() -> anyhow::Result<()> {
     match r#type {
         "(session)" => TmuxSession::open(name),
         "(layout)" => TxLayout::new(name.to_string()).open(),
-        "(directory)" => TxDirectory::new(name.to_string()).open(),
         _ => anyhow::bail!("Unknown type: {}", r#type),
     }
 }

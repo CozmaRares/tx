@@ -1,6 +1,10 @@
-use std::{fs, thread};
+use std::{fs, path::Path, thread};
 
-use crate::{commands::eza, managers::DirsManager};
+use crate::{
+    commands::{eza, tmux::TmuxSessionBuilder},
+    data::TmuxSession,
+    managers::DirsManager,
+};
 
 #[derive(Debug, Clone)]
 pub struct TxDirectory {
@@ -36,7 +40,7 @@ impl TxDirectory {
                         .into_iter()
                         .filter_map(|result| result.ok())
                         .filter(|entry| entry.path().is_dir())
-                        .map(|entry| entry.file_name().into_string().unwrap())
+                        .map(|entry| entry.path().to_string_lossy().to_string())
                         .collect::<Vec<_>>()
                 })
             })
@@ -61,7 +65,39 @@ impl TxDirectory {
         eza::preview_dir(&self.path)
     }
 
-    pub fn open(&self) -> anyhow::Result<()> {
-        todo!()
+    pub fn open(self) -> anyhow::Result<()> {
+        let mut session_name = Path::new(&self.path)
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
+
+        unsafe {
+            libc::srand(libc::time(std::ptr::null_mut()) as libc::c_uint);
+        }
+
+        loop {
+            let sessions = TmuxSession::get_all();
+
+            if !sessions.iter().any(|s| s.name == session_name) {
+                break;
+            }
+
+            let rand_int = unsafe { libc::rand() };
+            session_name = format!("{}_{}", session_name, rand_int);
+        }
+
+        TmuxSessionBuilder::new(&session_name, Some(self.path)).open_session()
+    }
+
+    pub fn find(dir: &str) -> anyhow::Result<TxDirectory> {
+        let dirs = TxDirectory::get_all()?;
+        let found = dirs.iter().find(|d| d.get_last_2_parts() == dir);
+
+        if let Some(found) = found {
+            return Ok(found.clone());
+        }
+
+        anyhow::bail!("Directory not found")
     }
 }

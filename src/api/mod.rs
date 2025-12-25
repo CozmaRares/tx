@@ -1,19 +1,21 @@
 mod attach;
+mod dot;
 mod edit;
 mod ls;
 mod pick;
 mod preview;
 mod rml;
+mod sesh;
 mod session;
 mod switch;
-mod dot;
 
 pub use attach::handle_attach;
+pub use dot::handle_dot;
 pub use edit::handle_edit;
 pub use ls::handle_ls;
 pub use pick::handle_pick;
 pub use preview::handle_preview;
 pub use rml::handle_rml;
+pub use sesh::handle_sesh;
 pub use session::handle_new_session;
 pub use switch::handle_switch;
-pub use dot::handle_dot;

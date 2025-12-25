@@ -16,14 +16,13 @@ pub fn pick_session(input: &str) -> anyhow::Result<String> {
 }
 
 pub fn pick_dir(input: &str) -> anyhow::Result<String> {
-    let preview_cmd = r#"basename {} | xargs -I{} tx preview -d {}"#;
+    let preview_cmd = r#"tx preview -d {}"#;
     picker(input, preview_cmd)
 }
 
 fn picker(input: &str, preview_cmd: &str) -> anyhow::Result<String> {
     let cmd = vec![
         "fzf",
-        "--color=dark,gutter:-1",
         "--cycle",
         "--tmux",
         "center,75%,80%",

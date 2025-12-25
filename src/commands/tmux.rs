@@ -194,10 +194,6 @@ impl TmuxSessionBuilder {
         .map(|_s| {})
     }
 
-    pub fn open_session(self) -> anyhow::Result<()> {
-        open_session(&self.session_name)
-    }
-
     pub fn rename_window(&mut self, name: &str) -> anyhow::Result<()> {
         run_command(&[
             "tmux",
@@ -208,5 +204,9 @@ impl TmuxSessionBuilder {
         ])?;
         self.set_window(name);
         Ok(())
+    }
+
+    pub fn open_session(self) -> anyhow::Result<()> {
+        open_session(&self.session_name)
     }
 }

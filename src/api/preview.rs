@@ -13,7 +13,7 @@ pub fn handle_preview(args: PreviewArgs) -> anyhow::Result<()> {
     }
 
     if let Some(dir) = args.directory {
-        return TxDirectory::new(dir).preview();
+        return TxDirectory::find(&dir)?.preview();
     }
 
     anyhow::bail!("No preview type specified");
