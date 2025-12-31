@@ -72,22 +72,22 @@ impl TxDirectory {
             .to_string_lossy()
             .to_string();
 
-        unsafe {
-            libc::srand(libc::time(std::ptr::null_mut()) as libc::c_uint);
-        }
+        let mut increment = 0;
+
+        let sessions = TmuxSession::get_all();
 
         loop {
-            let sessions = TmuxSession::get_all();
-
             if !sessions.iter().any(|s| s.name == session_name) {
                 break;
             }
 
-            let rand_int = unsafe { libc::rand() };
-            session_name = format!("{}_{}", session_name, rand_int);
+            increment += 1;
+            session_name = format!("{}_{}", session_name, increment);
         }
 
-        TmuxSessionBuilder::new(&session_name, Some(self.path)).open_session()
+        let builder = TmuxSessionBuilder::new(&session_name, Some(self.path));
+        builder.create_session()?;
+        builder.open_session()
     }
 
     pub fn find(dir: &str) -> anyhow::Result<TxDirectory> {
