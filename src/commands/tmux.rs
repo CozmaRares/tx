@@ -86,17 +86,33 @@ macro_rules! format_pane {
 }
 
 impl TmuxSessionBuilder {
-    pub fn new(name: &str, root: Option<String>) -> Self {
-        Self {
-            session_name: name.to_string(),
-            session_root: root.unwrap_or(
-                std::env::current_dir()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string(),
-            ),
+    pub fn new(name: Option<String>, root: Option<String>) -> Self {
+        let current_dir = std::env::current_dir()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
 
+        let fallback_name = current_dir.rsplit('/').next().unwrap().to_string();
+        let original_name = name.unwrap_or(fallback_name);
+        let mut session_name = original_name.clone();
+
+        let mut increment = 0;
+
+        let sessions = TmuxSession::get_all();
+
+        loop {
+            if !sessions.iter().any(|s| s.name == session_name) {
+                break;
+            }
+
+            increment += 1;
+            session_name = format!("{}_{}", original_name, increment);
+        }
+
+        Self {
+            session_name,
+            session_root: root.unwrap_or(current_dir),
             current_window: String::new(),
             current_pane: 1,
         }

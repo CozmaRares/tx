@@ -2,7 +2,6 @@ use std::{fs, path::Path, thread};
 
 use crate::{
     commands::{eza, tmux::TmuxSessionBuilder},
-    data::TmuxSession,
     managers::DirsManager,
 };
 
@@ -66,26 +65,13 @@ impl TxDirectory {
     }
 
     pub fn open(self) -> anyhow::Result<()> {
-        let mut session_name = Path::new(&self.path)
+        let session_name = Path::new(&self.path)
             .file_name()
             .unwrap()
             .to_string_lossy()
             .to_string();
 
-        let mut increment = 0;
-
-        let sessions = TmuxSession::get_all();
-
-        loop {
-            if !sessions.iter().any(|s| s.name == session_name) {
-                break;
-            }
-
-            increment += 1;
-            session_name = format!("{}_{}", session_name, increment);
-        }
-
-        let builder = TmuxSessionBuilder::new(&session_name, Some(self.path));
+        let builder = TmuxSessionBuilder::new(Some(session_name), Some(self.path));
         builder.create_session()?;
         builder.open_session()
     }

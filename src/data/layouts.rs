@@ -38,7 +38,7 @@ struct TxLayoutConfig {
 
 #[derive(Debug, Deserialize)]
 struct ProjectConfig {
-    name: String,
+    name: Option<String>,
     root: Option<String>,
     default_window: Option<String>,
 }
@@ -60,7 +60,7 @@ struct Pane {
 
 impl TxLayoutConfig {
     pub fn open(self) -> anyhow::Result<()> {
-        let mut builder = TmuxSessionBuilder::new(&self.project.name, self.project.root);
+        let mut builder = TmuxSessionBuilder::new(self.project.name, self.project.root);
 
         builder.create_session()?;
 
