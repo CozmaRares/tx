@@ -1,11 +1,8 @@
-use std::{fs, path::Path, thread};
+use std::{fs, thread};
 
-use crate::{
-    commands::{eza, tmux::TmuxSessionBuilder},
-    managers::DirsManager,
-};
+use crate::{commands::eza, managers::DirsManager};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TxDirectory {
     pub path: String,
     last_2_parts_start: usize,
@@ -64,26 +61,10 @@ impl TxDirectory {
         eza::preview_dir(&self.path)
     }
 
-    pub fn open(self) -> anyhow::Result<()> {
-        let session_name = Path::new(&self.path)
-            .file_name()
-            .unwrap()
-            .to_string_lossy()
-            .to_string();
-
-        let builder = TmuxSessionBuilder::new(Some(session_name), Some(self.path));
-        builder.create_session()?;
-        builder.open_session()
-    }
-
-    pub fn find(dir: &str) -> anyhow::Result<TxDirectory> {
-        let dirs = TxDirectory::get_all()?;
-        let found = dirs.iter().find(|d| d.get_last_2_parts() == dir);
-
-        if let Some(found) = found {
-            return Ok(found.clone());
-        }
-
-        anyhow::bail!("Directory not found")
+    pub fn find(dir: &str) -> Option<TxDirectory> {
+        let Ok(dirs) = TxDirectory::get_all() else {
+            return None;
+        };
+        dirs.into_iter().find(|d| d.get_last_2_parts() == dir)
     }
 }

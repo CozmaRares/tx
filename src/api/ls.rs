@@ -12,7 +12,7 @@ impl LsData {
     fn len(&self) -> usize {
         match self {
             LsData::Session(TmuxSession { name, .. }) => name.len(),
-            LsData::Layout(TxLayout(name)) => name.len(),
+            LsData::Layout(TxLayout { name, .. }) => name.len(),
             LsData::Directory(dir) => dir.get_last_2_parts().len(),
         }
     }
@@ -30,7 +30,7 @@ impl LsData {
                 },
                 spaces = spaces
             ),
-            LsData::Layout(layout) => format!("{:<spaces$} (layout)", layout.0, spaces = spaces),
+            LsData::Layout(layout) => format!("{:<spaces$} (layout)", layout.name, spaces = spaces),
             LsData::Directory(dir) => format!(
                 "{:<spaces$} (directory)",
                 dir.get_last_2_parts(),

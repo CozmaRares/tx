@@ -14,7 +14,7 @@ pub fn handle_new_session(name: String) -> anyhow::Result<()> {
                 }
             }
             ls::LsData::Layout(layout) => {
-                if layout.0 == name {
+                if layout.name == name {
                     layout.open()?;
                 }
             }

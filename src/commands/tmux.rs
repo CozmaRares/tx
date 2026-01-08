@@ -82,16 +82,27 @@ macro_rules! format_pane {
 }
 
 impl TmuxSessionBuilder {
-    pub fn new(name: Option<String>, root: Option<String>) -> Self {
+    pub fn new_named(name: String, root: String) -> Self {
+        TmuxSessionBuilder::constructor(name, root)
+    }
+
+    pub fn new_from_dir(root: String) -> Self {
+        let name = root.rsplit('/').next().unwrap().to_string();
+        TmuxSessionBuilder::constructor(name, root)
+    }
+
+    pub fn default() -> Self {
         let current_dir = std::env::current_dir()
             .unwrap()
             .to_str()
             .unwrap()
             .to_string();
+        TmuxSessionBuilder::new_from_dir(current_dir)
+    }
 
-        let fallback_name = current_dir.rsplit('/').next().unwrap().to_string();
-        let original_name = name.unwrap_or(fallback_name).replace(".", "_");
-        let mut session_name = original_name.clone();
+    fn constructor(mut name: String, root: String) -> Self {
+        name = name.replace(".", "_");
+        let mut session_name = name.clone();
 
         let mut increment = 0;
 
@@ -103,12 +114,12 @@ impl TmuxSessionBuilder {
             }
 
             increment += 1;
-            session_name = format!("{}_{}", original_name, increment);
+            session_name = format!("{}_{}", name, increment);
         }
 
         Self {
             session_name,
-            session_root: root.unwrap_or(current_dir),
+            session_root: root,
             current_window: String::new(),
             current_pane: 1,
         }

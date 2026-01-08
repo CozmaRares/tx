@@ -5,27 +5,56 @@ use crate::{
     managers::LayoutsManager,
 };
 
-#[derive(Debug, Clone)]
-pub struct TxLayout(pub String);
+#[derive(Debug)]
+pub struct TxLayout {
+    pub name: String,
+    overridden_root: Option<String>,
+}
 
 impl TxLayout {
     pub fn new(name: String) -> Self {
-        Self(name)
+        Self {
+            name,
+            overridden_root: None,
+        }
+    }
+
+    pub fn override_root(&mut self, root: String) {
+        self.overridden_root = Some(root);
     }
 
     pub fn get_all() -> anyhow::Result<Vec<TxLayout>> {
         let files = LayoutsManager::get_all()?;
-        Ok(files.into_iter().map(TxLayout).collect())
+        Ok(files.into_iter().map(TxLayout::new).collect())
     }
 
     pub fn preview(&self) -> anyhow::Result<()> {
-        bat::preview_file(LayoutsManager::create_file_path(&self.0))
+        bat::preview_file(LayoutsManager::create_file_path(&self.name))
     }
 
     pub fn open(self) -> anyhow::Result<()> {
-        let layout_contents = LayoutsManager::read(&self.0)?;
-        let config: TxLayoutConfig = toml::from_str(&layout_contents)?;
-        config.open()
+        let layout_contents = LayoutsManager::read(&self.name)?;
+        let mut config: TxLayoutConfig = toml::from_str(&layout_contents)?;
+
+        match (&self.overridden_root, &config.project.root) {
+            (Some(_), Some(_)) => {
+                anyhow::bail!(
+                    "You cannot override the root of layout {} because it already has a root",
+                    self.name
+                )
+            }
+            (Some(_), None) => config.project.root = self.overridden_root,
+            _ => {}
+        }
+
+        config.open(&self.name)
+    }
+
+    pub fn find(layout: &str) -> Option<TxLayout> {
+        let Ok(layouts) = TxLayout::get_all() else {
+            return None;
+        };
+        layouts.into_iter().find(|l| l.name == layout)
     }
 }
 
@@ -59,8 +88,18 @@ struct Pane {
 }
 
 impl TxLayoutConfig {
-    pub fn open(self) -> anyhow::Result<()> {
-        let mut builder = TmuxSessionBuilder::new(self.project.name, self.project.root);
+    pub fn open(self, layout_name: &str) -> anyhow::Result<()> {
+        let mut builder = match (self.project.name, self.project.root) {
+            (Some(name), Some(root)) => TmuxSessionBuilder::new_named(name, root),
+            (None, Some(root)) => TmuxSessionBuilder::new_from_dir(root),
+            (None, None) => TmuxSessionBuilder::default(),
+            (Some(_), None) => {
+                anyhow::bail!(
+                    "Layout {} has a name set, but no root. Root is required if name is set",
+                    layout_name
+                )
+            }
+        };
 
         builder.create_session()?;
 

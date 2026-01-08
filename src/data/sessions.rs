@@ -1,6 +1,6 @@
 use crate::commands::tmux;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TmuxSession {
     pub name: String,
     pub is_attached: bool,

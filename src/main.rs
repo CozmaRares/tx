@@ -42,7 +42,7 @@ fn main() -> anyhow::Result<()> {
         Command::Preview(args) => handle_preview(args),
         Command::Pick => handle_pick(),
         Command::Switch => handle_switch(),
-        Command::Sesh => handle_sesh(),
+        Command::Sesh { layout } => handle_sesh(layout),
         Command::Dot => handle_dot(),
     }
 }

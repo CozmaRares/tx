@@ -47,7 +47,10 @@ pub enum Command {
     Switch,
 
     #[command(about = "Create a new session from the list of directories")]
-    Sesh,
+    Sesh {
+        #[arg(short = 'l', value_name = "LAYOUT")]
+        layout: Option<String>,
+    },
 
     #[command(about = "Create new session here", name = ".")]
     Dot,

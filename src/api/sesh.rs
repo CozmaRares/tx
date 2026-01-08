@@ -1,6 +1,9 @@
-use crate::{commands::fzf, data::TxDirectory};
+use crate::{
+    commands::{fzf, tmux::TmuxSessionBuilder},
+    data::{TxDirectory, TxLayout},
+};
 
-pub fn handle_sesh() -> anyhow::Result<()> {
+pub fn handle_sesh(layout: Option<String>) -> anyhow::Result<()> {
     let dirs = TxDirectory::get_all()?;
     let data = dirs
         .iter()
@@ -9,5 +12,19 @@ pub fn handle_sesh() -> anyhow::Result<()> {
         .join("\n");
     let selected = fzf::pick_dir(&data)?;
 
-    TxDirectory::find(&selected)?.open()
+    let Some(dir) = TxDirectory::find(&selected) else {
+        anyhow::bail!("Directory not found");
+    };
+
+    if let Some(layout) = layout {
+        let Some(mut layout) = TxLayout::find(&layout) else {
+            anyhow::bail!("Layout not found");
+        };
+        layout.override_root(dir.path);
+        layout.open()
+    } else {
+        let builder = TmuxSessionBuilder::new_from_dir(dir.path);
+        builder.create_session()?;
+        builder.open_session()
+    }
 }
