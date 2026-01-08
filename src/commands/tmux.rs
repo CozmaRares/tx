@@ -62,10 +62,6 @@ pub fn preview_pane(name: &str) -> anyhow::Result<()> {
     execvp(&["tmux", "capture-pane", "-ep", "-t", name])
 }
 
-pub fn new_session() -> anyhow::Result<()> {
-    execvp(&["tmux", "new-session"])
-}
-
 pub struct TmuxSessionBuilder {
     session_name: String,
     session_root: String,
@@ -94,7 +90,7 @@ impl TmuxSessionBuilder {
             .to_string();
 
         let fallback_name = current_dir.rsplit('/').next().unwrap().to_string();
-        let original_name = name.unwrap_or(fallback_name);
+        let original_name = name.unwrap_or(fallback_name).replace(".", "_");
         let mut session_name = original_name.clone();
 
         let mut increment = 0;

@@ -1,5 +1,7 @@
-use crate::commands::tmux;
+use crate::commands::tmux::TmuxSessionBuilder;
 
 pub fn handle_dot() -> anyhow::Result<()> {
-    tmux::new_session()
+    let builder = TmuxSessionBuilder::new(None, None);
+    builder.create_session()?;
+    builder.open_session()
 }
